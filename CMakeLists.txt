@@ -1,0 +1,65 @@
+cmake_minimum_required(VERSION 3.22)
+
+# THIS HAS TO COME BEFORE THE PROJECT LINE
+set(GCC_PREFIX "/usr/bin")
+set(CMAKE_C_COMPILER "${GCC_PREFIX}/gcc")
+set(CMAKE_CXX_COMPILER "${GCC_PREFIX}/g++")
+# THIS HAS TO COME BEFORE THE PROJECT LINE
+
+# Use ccache if available
+find_program(CCACHE_PROGRAM ccache)
+if(CCACHE_PROGRAM)
+  set(CMAKE_C_COMPILER_LAUNCHER ${CCACHE_PROGRAM})
+  set(CMAKE_CXX_COMPILER_LAUNCHER ${CCACHE_PROGRAM})
+endif()
+
+# Specify default build type if none provided (before project() command)
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE
+      Release
+      CACHE STRING "Choose the type of build (Debug or Release)" FORCE)
+endif()
+
+# Only allow Debug and Release
+if(CMAKE_CONFIGURATION_TYPES)
+  set(CMAKE_CONFIGURATION_TYPES
+      "Debug;Release"
+      CACHE STRING "Limited configurations" FORCE)
+  mark_as_advanced(CMAKE_CONFIGURATION_TYPES)
+endif()
+
+# Project name
+project(
+  cpp_stuff
+  VERSION 0.0.1
+  LANGUAGES C CXX)
+
+# Common Flags
+set(CMAKE_C_FLAGS_COMMON "-Wall -Wextra -Werror -Wpedantic -fdiagnostics-color=always")
+set(CMAKE_CXX_FLAGS_COMMON "${CMAKE_C_FLAGS_COMMON}")
+
+# C Flags
+set(CMAKE_C_STANDARD 99)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+set(CMAKE_C_EXTENSIONS OFF)
+set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} ${CMAKE_C_FLAGS_COMMON} -DDEBUG -g -O0")
+set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} ${CMAKE_C_FLAGS_COMMON} -O3")
+
+# C++ Flags
+set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${CMAKE_CXX_FLAGS_COMMON} -DDEBUG -g -O0")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${CMAKE_CXX_FLAGS_COMMON} -O3")
+
+# Paths
+set(INCLUDE_PATH "${CMAKE_SOURCE_DIR}/include")
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin")
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/build/lib")
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/build/lib")
+
+# run this here so that all tests can be found in ${PROJECT_SOURCE_DIR}/build
+enable_testing()
+
+# add subdirectories
+add_subdirectory(src/tests)

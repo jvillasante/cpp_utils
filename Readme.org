@@ -1,0 +1,3 @@
+#+title: Cpp Utilities
+#+description: Little and useful utilities
+#+author: Julio C. Villasante
