@@ -30,7 +30,7 @@ endif()
 
 # Project name
 project(
-  cpp_stuff
+  cpp_utils
   VERSION 0.0.1
   LANGUAGES C CXX)
 
@@ -58,8 +58,10 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/build/lib")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/build/lib")
 
-# run this here so that all tests can be found in ${PROJECT_SOURCE_DIR}/build
-enable_testing()
-
-# add subdirectories
-add_subdirectory(src/tests)
+if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
+    option(CPP_UTILS_BUILD_TESTS "whether or not tests should be built" OFF)
+    if(CPP_UTILS_BUILD_TESTS)
+        enable_testing()
+        add_subdirectory(src/tests)
+    endif()
+endif()
