@@ -6,6 +6,7 @@ clean:
 debug:
 	cmake -E make_directory "build" && \
     cmake -S . -B "build" -G Ninja \
+          -DCPP_UTILS_BUILD_TESTS=1 \
           -DCMAKE_BUILD_TYPE=Debug \
           -DCMAKE_EXPORT_COMPILE_COMMANDS=1 && \
     cmake --build build --config Debug
@@ -14,6 +15,7 @@ debug:
 release:
 	cmake -E make_directory "build" && \
     cmake -S . -B "build" -G Ninja \
+        -DCPP_UTILS_BUILD_TESTS=1 \
         -DCMAKE_BUILD_TYPE=Release \
         -DCMAKE_EXPORT_COMPILE_COMMANDS=1 && \
     cmake --build build --config Release
