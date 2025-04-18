@@ -66,7 +66,7 @@ struct hash_mix_impl;
 // We use Jon Maiga's implementation from
 // http://jonkagstrom.com/mx3/mx3_rev2.html
 //
-//      x ^= x >> 32;
+//  x ^= x >> 32;
 //  x *= 0xe9846af9b1a615d;
 //  x ^= x >> 32;
 //  x *= 0xe9846af9b1a615d;
