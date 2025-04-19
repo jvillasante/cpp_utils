@@ -37,35 +37,31 @@ public:
     explicit UniqueHandle(handle value = Traits::invalid()) noexcept
         : value_(value)
     {}
-    ~UniqueHandle() noexcept { Traits::destroy(value_); }
-
     UniqueHandle(UniqueHandle const&) = delete;
     UniqueHandle& operator=(UniqueHandle const&) = delete;
     UniqueHandle(UniqueHandle&& other) noexcept : value_(other.release()) {}
     UniqueHandle& operator=(UniqueHandle&& other) noexcept
     {
-        if (this != &other) { reset(other.release()); }
+        UniqueHandle{std::move(other)}.swap(*this);
         return *this;
     }
+    ~UniqueHandle() noexcept { Traits::destroy(value_); }
 
     explicit operator bool() const noexcept
     {
         return value_ != Traits::invalid();
     }
-    handle get() const noexcept { return value_; }
+    handle const& get() const noexcept { return value_; }
+    handle const& operator*() const noexcept { return value_; }
     handle release() noexcept
     {
         return std::exchange(value_, Traits::invalid());
     }
-    bool reset(handle value = Traits::invalid()) noexcept
+    void reset(handle value = Traits::invalid()) noexcept
     {
-        if (value_ != value)
-        {
-            Traits::destroy(value_);
-            value_ = value;
-        }
-
-        return static_cast<bool>(*this);
+        // Note: bad things will happen if `value_ == value`
+        Traits::destroy(value_);
+        value_ = value;
     }
     void swap(UniqueHandle<Traits>& other) noexcept
     {
@@ -91,6 +87,6 @@ template <typename Traits>
 bool operator!=(UniqueHandle<Traits> const& lhs,
                 UniqueHandle<Traits> const& rhs) noexcept
 {
-    return lhs.get() != rhs.get();
+    return !operator==(lhs, rhs);
 }
 } // namespace utils
