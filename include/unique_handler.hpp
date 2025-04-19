@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cassert>
 #include <utility>
 
 /**
@@ -59,7 +60,9 @@ public:
     }
     void reset(handle value = Traits::invalid()) noexcept
     {
-        // Note: bad things will happen if `value_ == value`
+        // NOTE: A test for self-reset, i.e. whether `value` points to an object already managed by `*this`, is not performed!
+        assert(value_ != value);
+
         Traits::destroy(value_);
         value_ = value;
     }
