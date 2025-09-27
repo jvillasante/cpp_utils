@@ -1,3 +1,5 @@
+include(${PROJECT_SOURCE_DIR}/cmake/Catch2.cmake)
+
 add_executable(algorithms algorithms.cpp)
 target_link_libraries(algorithms
     PRIVATE utils::libutils Catch2::Catch2WithMain)

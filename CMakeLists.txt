@@ -25,6 +25,5 @@ add_subdirectory("tools")
 
 if(BUILD_TESTING)
     enable_testing()
-    find_package(Catch2 CONFIG REQUIRED)
     add_subdirectory("test")
 endif()
