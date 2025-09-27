@@ -24,7 +24,7 @@ set_target_properties(libutils PROPERTIES LINKER_LANGUAGE CXX)
 # `libmath` will inherit these properties!
 target_compile_features(libutils PUBLIC cxx_std_23)
 target_compile_options(libutils PUBLIC
-    $<$<CONFIG:Debug>:-Wall -Wextra -Werror -Wpedantic -fdiagnostics-color=always>
+    $<$<CONFIG:Debug>:-Wall -Wextra -Werror -Wpedantic>
 )
 
 # For `./src/libmath/include` we use `PRIVATE` visibility as dependent targets
