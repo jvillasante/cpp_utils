@@ -1,0 +1,49 @@
+BasedOnStyle: LLVM
+
+---
+Language: Cpp
+
+# Things I like
+ColumnLimit: 80
+Cpp11BracedListStyle: true
+
+# Braces
+AlwaysBreakTemplateDeclarations: true
+AllowShortBlocksOnASingleLine: true
+AllowShortEnumsOnASingleLine: true
+AllowShortFunctionsOnASingleLine: true
+AllowShortIfStatementsOnASingleLine: WithoutElse
+AllowShortLambdasOnASingleLine: true
+BraceWrapping:
+  AfterCaseLabel:        true
+  AfterClass:            true
+  AfterControlStatement: true
+  AfterEnum:             true
+  AfterFunction:         true
+  AfterNamespace:        true
+  AfterObjCDeclaration:  true
+  AfterStruct:           true
+  AfterUnion:            true
+  AfterExternBlock:      true
+  BeforeCatch:           true
+  BeforeElse:            true
+  BeforeLambdaBody:      false
+  BeforeWhile:           true
+  IndentBraces:          false
+  SplitEmptyFunction:    false
+  SplitEmptyRecord:      false
+  SplitEmptyNamespace:   false
+BreakBeforeBraces: Custom
+
+# Force pointers to the type for C++.
+DerivePointerAlignment: false
+PointerAlignment: Left
+
+# Indent with 4 spaces
+IndentWidth: 4
+AccessModifierOffset: -4
+
+# Disable formatting options which may break tests.
+SortIncludes: true
+ReflowComments: false
+---

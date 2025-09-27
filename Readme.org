@@ -1,0 +1,5 @@
+#+title: C++ Utilities
+#+description: Some useful C++ utilities
+#+author: Julio C. Villasante
+
+These are some simple utilities for C++ programming
