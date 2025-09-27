@@ -45,4 +45,8 @@ minsizerel:
 test: debug
 	ctest --output-on-failure --test-dir build/debug/test
 
+.PHONY: install
+install:
+	cmake --build build/release --config Release --target install
+
 .DEFAULT_GOAL := debug
