@@ -106,7 +106,7 @@ bit_cast(From const& src) noexcept
                   "This implementation additionally requires "
                   "destination type to be trivially constructible");
 
-    To dst;
+    To dst{};
     std::memcpy(&dst, &src, sizeof(To));
     return dst;
 }

@@ -10,8 +10,7 @@ int main()
     };
 
     auto t =
-        utils::chrono::bench::perf_timer<std::chrono::microseconds>::duration(
-            f, 10);
+        utils::chrono::perf_timer<std::chrono::microseconds>::duration(f, 10);
     auto microseconds = std::chrono::duration<double, std::micro>(t).count();
     std::cout << "Took: " << microseconds << " microseconds" << '\n';
 

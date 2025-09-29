@@ -1,5 +1,6 @@
 add_library(libutils
     ${CMAKE_SOURCE_DIR}/include/libutils/algorithms.hpp
+    ${CMAKE_SOURCE_DIR}/include/libutils/bit.hpp
     ${CMAKE_SOURCE_DIR}/include/libutils/chrono.hpp
     ${CMAKE_SOURCE_DIR}/include/libutils/collections.hpp
     ${CMAKE_SOURCE_DIR}/include/libutils/functional.hpp
@@ -21,7 +22,7 @@ set_target_properties(libutils PROPERTIES OUTPUT_NAME utils)
 set_target_properties(libutils PROPERTIES LINKER_LANGUAGE CXX)
 
 # Since we specify `PUBLIC` visibility here, any targets that compile against
-# `libmath` will inherit these properties!
+# `libutils` will inherit these properties!
 target_compile_features(libutils PUBLIC cxx_std_23)
 target_compile_options(libutils PUBLIC
     $<$<CONFIG:Debug>:-Wall -Wextra -Werror -Wpedantic>

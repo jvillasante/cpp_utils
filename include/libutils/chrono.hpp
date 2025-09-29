@@ -3,7 +3,7 @@
 #include <chrono>
 #include <functional>
 
-namespace utils::chrono::bench
+namespace utils::chrono
 {
 //
 // Perf timer implementation to measure functions
@@ -39,4 +39,4 @@ struct perf_timer
         return std::chrono::duration_cast<Time>(end - start);
     }
 };
-} // namespace utils::chrono::bench
+} // namespace utils::chrono

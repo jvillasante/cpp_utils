@@ -28,12 +28,13 @@ protected:
     ~ScopeGuardBase() = default;
 };
 
-// requires: ScopeGuard should store its callable by value
 template <typename Func>
-    requires(!std::is_reference_v<Func> && !std::is_const_v<Func> &&
-             !std::is_volatile_v<Func>)
 class ScopeGuard : public ScopeGuardBase
 {
+    // requires: ScopeGuard should store its callable by value
+    static_assert(!std::is_reference_v<Func> && !std::is_const_v<Func> &&
+                  !std::is_volatile_v<Func>);
+
 public:
     explicit ScopeGuard(Func const& func) noexcept : func_(func) {}
     explicit ScopeGuard(Func&& func) noexcept : func_(std::move(func)) {}

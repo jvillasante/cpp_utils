@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <memory>
 
-namespace utils::smart_pointers
+namespace utils
 {
 /**
  * @brief Converts std::unique_ptr of base type to std::unique_ptr of derived
@@ -78,4 +78,4 @@ std::unique_ptr<Derived> dynamic_ptr_cast(std::unique_ptr<Base>&& base) noexcept
 
     return nullptr;
 }
-} // namespace utils::smart_pointers
+} // namespace utils
