@@ -5,7 +5,9 @@
 #include <cstring>
 
 #include <limits>
+#include <string_view>
 #include <type_traits>
+#include <vector>
 
 namespace utils::bit
 {
@@ -31,6 +33,17 @@ std::byte const* as_bytes(From const& from)
 {
     // NOLINTNEXTLINE
     return reinterpret_cast<std::byte const*>(&from);
+}
+
+inline std::string_view to_string_view(std::byte const* data, std::size_t size)
+{
+    // NOLINTNEXTLINE
+    return {reinterpret_cast<char const*>(data), size};
+}
+
+inline std::string_view to_string_view(std::vector<std::byte> const& data)
+{
+    return to_string_view(data.data(), data.size());
 }
 
 template <typename T>
