@@ -46,14 +46,16 @@ using tstringstream = std::basic_stringstream<CharT, std::char_traits<CharT>,
 
 // ----------
 
-template <typename Val, std::enable_if_t<std::is_arithmetic_v<Val>>>
-inline std::string to_string(Val const val)
+template <typename Val>
+inline std::enable_if_t<std::is_arithmetic_v<Val>, std::string>
+to_string(Val const val)
 {
     return std::to_string(val);
 }
 
-template <typename Val, std::enable_if_t<!std::is_arithmetic_v<Val>>>
-inline std::string to_string(Val const& val)
+template <typename Val>
+inline std::enable_if_t<!std::is_arithmetic_v<Val>, std::string>
+to_string(Val const& val)
 {
     return static_cast<std::ostringstream const&>(std::ostringstream() << val)
         .str();
