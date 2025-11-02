@@ -3,3 +3,9 @@
 #+author: Julio C. Villasante
 
 These are some simple utilities for C++ programming
+I normally install them to have them system-wide
+
+#+begin_src shell
+make release
+sudo make install
+#+end_src
