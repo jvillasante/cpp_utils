@@ -1,6 +1,5 @@
 #pragma once
 
-#include <algorithm>
 #include <memory>
 
 namespace utils
@@ -9,11 +8,11 @@ namespace utils
  * @brief Converts std::unique_ptr of base type to std::unique_ptr of derived
  * type by using static_cast internally
  *
- * @details Ownership of the object is transferred to the returned
- * std::unique_ptr. It is somewhat analogous to std::static_ptr_cast
+ * @details Ownership of the object is transferred unconditionally to the
+ * returned std::unique_ptr. It is somewhat analogous to std::static_ptr_cast
  */
 template <typename Derived, typename Base, typename Deleter>
-std::unique_ptr<Derived, Deleter>
+[[nodiscard]] std::unique_ptr<Derived, Deleter>
 static_ptr_cast(std::unique_ptr<Base, Deleter> base)
 {
     auto deleter = base.get_deleter();
@@ -34,7 +33,8 @@ static_ptr_cast(std::unique_ptr<Base, Deleter> base)
  * inconvenient
  */
 template <typename Derived, typename Base>
-std::unique_ptr<Derived> static_ptr_cast(std::unique_ptr<Base> base) noexcept
+[[nodiscard]] std::unique_ptr<Derived>
+static_ptr_cast(std::unique_ptr<Base> base) noexcept
 {
     auto derived_ptr = static_cast<Derived*>(base.release());
     return std::unique_ptr<Derived>(derived_ptr);
@@ -42,15 +42,15 @@ std::unique_ptr<Derived> static_ptr_cast(std::unique_ptr<Base> base) noexcept
 
 /**
  * @brief Converts std::unique_ptr of base type to std::unique_ptr of derived
- * type by using dynamic_cast internally
- * @details Ownership of the object will be transfered to the returned
- * std::unique_ptr if and only if the dynamic_cast from Base to Derived is
- * successful. Otherwise the input std::unique_ptr will continue to be the owner
- * of the object It is somewhat analogous to std::dynamic_ptr_cast
+ * type by using dynamic_cast internally.
+ *
+ * @details Takes `base` by lvalue reference. If the cast succeeds, ownership
+ * is transferred to the returned std::unique_ptr and `base` becomes null.
+ * If the cast fails, `base` retains ownership and null is returned.
  */
 template <typename Derived, typename Base, typename Deleter>
-std::unique_ptr<Derived, Deleter>
-dynamic_ptr_cast(std::unique_ptr<Base, Deleter>&& base)
+[[nodiscard]] std::unique_ptr<Derived, Deleter>
+dynamic_ptr_cast(std::unique_ptr<Base, Deleter>& base)
 {
     if (auto* derived = dynamic_cast<Derived*>(base.get()); derived != nullptr)
     {
@@ -68,7 +68,8 @@ dynamic_ptr_cast(std::unique_ptr<Base, Deleter>&& base)
  * dynamic_ptr_cast() is required
  */
 template <typename Derived, typename Base>
-std::unique_ptr<Derived> dynamic_ptr_cast(std::unique_ptr<Base>&& base) noexcept
+[[nodiscard]] std::unique_ptr<Derived>
+dynamic_ptr_cast(std::unique_ptr<Base>& base) noexcept
 {
     if (auto* derived = dynamic_cast<Derived*>(base.get()); derived != nullptr)
     {

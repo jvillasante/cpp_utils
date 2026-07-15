@@ -84,14 +84,13 @@ ScopeGuard<Func> operator+(ScopeGuardOnExit /*unused*/, Func&& func)
 // these macros are namespaced, they are pre-processor macros and as such they
 // will be added to the global namespace. Usage example:
 //
-// 1. auto _ = utils::make_guard([&]() {
+// 1. auto my_guard = utils::make_guard([&]() {
 //        on_scope_variable.method();
 //        std::cout << "this is the end" << '\n';
 //    });
-//    The action will always run at the end of the current scope. The caller can
-//    capture variables on the lambda. Unfortunately we need to name the return
-//    type with the "___" macro and forgetting is a bug that the compiler won't
-//    catch!
+//    The action will always run at the end of the current scope. The caller
+//    must name the return value — if it is not stored, the guard destructs
+//    immediately.
 //
 // 2. ON_SCOPE_EXIT {
 //        on_scope_variable.method();
@@ -113,10 +112,8 @@ ScopeGuard<Func> operator+(ScopeGuardOnExit /*unused*/, Func&& func)
 #define CONCAT2(x, y) x##y
 #define CONCAT(x, y) CONCAT2(x, y)
 #ifdef __COUNTER__
-#define _ CONCAT(dont_care, __COUNTER__)
 #define ANON_VAR(x) CONCAT(x, __COUNTER__)
 #else
-#define ___ CONCAT(dont_care, __LINE__)
 #define ANON_VAR(x) CONCAT(x, __LINE__)
 #endif
 

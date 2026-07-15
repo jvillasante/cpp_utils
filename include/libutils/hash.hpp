@@ -127,6 +127,10 @@ inline std::size_t hash_mix(std::size_t v)
 template <typename T>
 inline void combine(std::size_t& seed, T const& v)
 {
-    seed = detail::hash_mix(seed + 0x9e3779b9 + std::hash<T>()(v));
+    static constexpr std::size_t magic =
+        (sizeof(std::size_t) == 8)
+            ? static_cast<std::size_t>(0x9e3779b97f4a7c15ULL)
+            : static_cast<std::size_t>(0x9e3779b9U);
+    seed = detail::hash_mix(seed + magic + std::hash<T>()(v));
 }
 } // namespace utils::hash

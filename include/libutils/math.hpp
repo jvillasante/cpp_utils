@@ -11,39 +11,36 @@
 namespace utils::math
 {
 template <typename T>
-bool is_even(T n)
+[[nodiscard]] bool is_even(T n)
 {
     static_assert(std::is_integral_v<T>);
     return (n & 1) == 0;
 }
 
 template <typename T>
-bool is_odd(T n)
+[[nodiscard]] bool is_odd(T n)
 {
     static_assert(std::is_integral_v<T>);
     return (n & 1) == 1;
 }
 
 template <typename T>
-bool nearly_equal(T lhs, T rhs, T epsilon = std::numeric_limits<T>::epsilon())
+[[nodiscard]] bool nearly_equal(T lhs, T rhs,
+                                T epsilon = std::numeric_limits<T>::epsilon())
 {
     static_assert(std::is_floating_point_v<T>);
 
-    // Check if the numbers are really close -- needed when comparing numbers
-    // near zero
-    T diff = std::fabs(lhs - rhs);
+    T diff = std::abs(lhs - rhs);
     if (diff <= epsilon) { return true; }
 
-    // Otherwise fall back to Knuth's algorithm
-    return (diff <= (std::max(std::fabs(lhs), std::fabs(rhs)) * epsilon));
+    return (diff <= (std::max(std::abs(lhs), std::abs(rhs)) * epsilon));
 }
 
 template <typename T>
-T random(T min, T max)
+[[nodiscard]] T random(T min, T max)
 {
     static_assert(std::is_integral_v<T>);
 
-    // One engine instance per thread
     auto thread_local static engine =
         std::default_random_engine{std::random_device{}()};
     return std::uniform_int_distribution<T>{min, max}(engine);
@@ -53,6 +50,8 @@ template <std::size_t N, typename input_t = std::uint32_t,
           typename sum_t = std::uint64_t>
 class simple_moving_average
 {
+    static_assert(N <= 255, "N must fit in uint8_t index");
+
 public:
     input_t operator()(input_t const input)
     {

@@ -8,7 +8,7 @@
 namespace utils::functional
 {
 template <typename F, typename R>
-inline R mapf(F&& f, R r)
+[[nodiscard]] inline R mapf(F&& f, R r)
 {
     std::transform(std::begin(r), std::end(r), std::begin(r),
                    std::forward<F>(f));
@@ -16,7 +16,7 @@ inline R mapf(F&& f, R r)
 }
 
 template <typename F, typename T, typename U>
-inline std::map<T, U> mapf(F&& f, const std::map<T, U>& m)
+[[nodiscard]] inline std::map<T, U> mapf(F&& f, const std::map<T, U>& m)
 {
     std::map<T, U> r;
     for (auto&& kvp : m)
@@ -28,7 +28,7 @@ inline std::map<T, U> mapf(F&& f, const std::map<T, U>& m)
 }
 
 template <typename F, typename T>
-inline std::queue<T> mapf(F&& f, std::queue<T> q)
+[[nodiscard]] inline std::queue<T> mapf(F&& f, std::queue<T> q)
 {
     std::queue<T> r;
 
@@ -42,25 +42,25 @@ inline std::queue<T> mapf(F&& f, std::queue<T> q)
 }
 
 template <typename F, typename R, typename T>
-constexpr T foldl(F&& f, R const& r, T i)
+[[nodiscard]] constexpr T foldl(F&& f, R const& r, T i)
 {
     return std::accumulate(std::begin(r), std::end(r), std::move(i),
                            std::forward<F>(f));
 }
 
 template <typename F, typename R, typename T>
-constexpr T foldr(F&& f, R const& r, T i)
+[[nodiscard]] constexpr T foldr(F&& f, R const& r, T i)
 {
     return std::accumulate(std::rbegin(r), std::rend(r), std::move(i),
                            [f = std::forward<F>(f)](auto&& arg1, auto&& arg2) {
-                               return std::forward<F>(f)(
-                                   std::forward<decltype(arg2)>(arg2),
-                                   std::forward<decltype(arg1)>(arg1));
+                               return f(std::forward<decltype(arg2)>(arg2),
+                                        std::forward<decltype(arg1)>(arg1));
                            });
 }
 
+// Queue overload: takes by value to avoid silently destroying the caller's queue.
 template <typename F, typename T>
-constexpr T foldl(F&& f, std::queue<T>& q, T i)
+[[nodiscard]] constexpr T foldl(F&& f, std::queue<T> q, T i)
 {
     while (!q.empty())
     {
@@ -72,7 +72,7 @@ constexpr T foldl(F&& f, std::queue<T>& q, T i)
 }
 
 template <typename T>
-auto map(T const fn)
+[[nodiscard]] auto map(T const fn)
 {
     return [=](auto const reduce_fn) {
         return [=](auto accumulator, auto const input) {
@@ -82,7 +82,7 @@ auto map(T const fn)
 }
 
 template <typename T>
-auto filter(T const predicate)
+[[nodiscard]] auto filter(T const predicate)
 {
     return [=](auto const reduce_fn) {
         return [=](auto accumulator, auto const input) {
@@ -93,7 +93,7 @@ auto filter(T const predicate)
 }
 
 template <typename T, typename... Ts>
-auto concat(T t, Ts... ts)
+[[nodiscard]] auto concat(T t, Ts... ts)
 {
     if constexpr (sizeof...(ts) > 0)
     {
@@ -104,7 +104,7 @@ auto concat(T t, Ts... ts)
 }
 
 template <typename A, typename B, typename F>
-auto combine(F binary_func, A a, B b)
+[[nodiscard]] auto combine(F binary_func, A a, B b)
 {
     return [=](auto const param) { return binary_func(a(param), b(param)); };
 }

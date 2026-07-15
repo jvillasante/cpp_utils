@@ -112,3 +112,41 @@ bit_cast(From const& src) noexcept
 }
 } // namespace std
 #endif // __cplusplus == 201103L
+
+/**
+ * Define `std::span` for compilers older than C++20.
+ * It's bad to add things to the std namespace, but the point is to "polyfill"
+ * this type for pre-C++20 compilers.
+ */
+
+#if __cplusplus < 202002L
+#include <cstddef>
+#include <vector>
+
+namespace std
+{
+template <typename T>
+class span
+{
+public:
+    span() = default;
+    span(T* data, std::size_t size) : data_(data), size_(size) {}
+    span(T* begin, T* end) : data_(begin), size_(end - begin) {}
+    template <typename U>
+    explicit span(std::vector<U> const& vec)
+        : data_(vec.data()), size_(vec.size())
+    {}
+
+    T* begin() const { return data_; }
+    T* end() const { return data_ + size_; }
+    [[nodiscard]] std::size_t size() const { return size_; }
+
+    T& operator[](std::size_t n) { return *(data_ + n); }
+    T const& operator[](std::size_t n) const { return *(data_ + n); }
+
+private:
+    T* data_ = nullptr;
+    std::size_t size_ = 0;
+};
+} // namespace std
+#endif // __cplusplus < 202002L

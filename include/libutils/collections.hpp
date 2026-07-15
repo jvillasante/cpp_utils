@@ -37,21 +37,38 @@ void insert_sorted(C& c, T const& value)
     c.insert(it, value);
 }
 
-// tells us the number of bytes that a collection owns
+// Number of bytes a collection's storage occupies (generic: uses size()).
+// For std::vector specifically, see the overload below which uses capacity().
 template <typename Collection>
-std::size_t areaof(Collection const& x)
+[[nodiscard]] std::size_t areaof(Collection const& x)
 {
     using value_type = typename Collection::value_type;
     return (std::size(x) * sizeof(value_type)) + sizeof(Collection);
 }
 
-// how well do we use memory
+// std::vector overload: reports allocated (capacity) bytes, not just used bytes.
+template <typename T, typename Allocator>
+[[nodiscard]] std::size_t areaof(std::vector<T, Allocator> const& x)
+{
+    return (x.capacity() * sizeof(T)) + sizeof(x);
+}
+
+// Ratio of live-element bytes to total allocated bytes.
 template <typename Collection>
-double memory_utilization(Collection const& x)
+[[nodiscard]] double memory_utilization(Collection const& x)
 {
     using value_type = typename Collection::value_type;
     double useful(std::size(x) * sizeof(value_type));
-    double total(areaof(x));
+    double total(static_cast<double>(areaof(x)));
+    return useful / total;
+}
+
+// std::vector overload: useful = size, total = capacity.
+template <typename T, typename Allocator>
+[[nodiscard]] double memory_utilization(std::vector<T, Allocator> const& x)
+{
+    double useful(static_cast<double>(x.size() * sizeof(T)));
+    double total(static_cast<double>(areaof(x)));
     return useful / total;
 }
 } // namespace utils::collections

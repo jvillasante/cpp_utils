@@ -1,6 +1,7 @@
 #include <libutils/collections.hpp>
 
 #include <catch2/catch_test_macros.hpp>
+#include <array>
 #include <vector>
 
 TEST_CASE("Collections - QuickRemoveAt")
@@ -21,4 +22,44 @@ TEST_CASE("Collections - InsertSorted")
 
     utils::collections::insert_sorted(v, 6);
     REQUIRE(std::ranges::is_sorted(v));
+}
+
+TEST_CASE("Collections - areaof generic uses size")
+{
+    std::array<int, 4> arr{1, 2, 3, 4};
+    std::size_t const expected = arr.size() * sizeof(int) + sizeof(arr);
+    REQUIRE(utils::collections::areaof(arr) == expected);
+}
+
+TEST_CASE("Collections - areaof vector uses capacity not size")
+{
+    std::vector<int> v;
+    v.reserve(10);
+    v.push_back(1);
+    v.push_back(2);
+    // size=2, capacity=10: areaof must use capacity
+    std::size_t const expected = v.capacity() * sizeof(int) + sizeof(v);
+    REQUIRE(utils::collections::areaof(v) == expected);
+    REQUIRE(utils::collections::areaof(v) != v.size() * sizeof(int) + sizeof(v));
+}
+
+TEST_CASE("Collections - memory_utilization generic")
+{
+    std::array<int, 4> arr{1, 2, 3, 4};
+    double const useful = static_cast<double>(arr.size() * sizeof(int));
+    double const total  = static_cast<double>(utils::collections::areaof(arr));
+    REQUIRE(utils::collections::memory_utilization(arr) == useful / total);
+}
+
+TEST_CASE("Collections - memory_utilization vector partial fill")
+{
+    std::vector<int> v;
+    v.reserve(10);
+    v.push_back(1);
+    v.push_back(2);
+    // useful = 2 elements, total based on capacity=10
+    double const useful = static_cast<double>(v.size() * sizeof(int));
+    double const total  = static_cast<double>(utils::collections::areaof(v));
+    REQUIRE(utils::collections::memory_utilization(v) == useful / total);
+    REQUIRE(utils::collections::memory_utilization(v) < 1.0);
 }

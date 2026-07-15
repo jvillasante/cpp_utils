@@ -14,7 +14,7 @@ namespace utils::chrono
 //
 // auto t = perf_timer<>::duration([]() {
 //   for (int i{0}; i < 10000; ++i) {
-//     function_to_messure();
+//     function_to_measure();
 //   }
 // });
 //

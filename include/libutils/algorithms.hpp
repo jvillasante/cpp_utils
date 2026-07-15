@@ -23,7 +23,7 @@ InputIt split(InputIt it, InputIt end_it, OutputIt out_it, T split_val,
 }
 
 template <typename It, typename F>
-std::pair<It, It> gather(It first, It last, It gather_pos, F predicate)
+[[nodiscard]] std::pair<It, It> gather(It first, It last, It gather_pos, F predicate)
 {
     return std::make_pair(
         std::stable_partition(first, gather_pos, std::not_fn(predicate)),

@@ -14,6 +14,8 @@ target_include_directories(libutils
 )
 
 include(GNUInstallDirs)
+include(CMakePackageConfigHelpers)
+
 install(TARGETS libutils
     EXPORT utils-targets
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
@@ -31,5 +33,16 @@ install(
     EXPORT utils-targets
     FILE utils-config.cmake
     NAMESPACE utils::
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/utils
+)
+
+write_basic_package_version_file(
+    "${CMAKE_CURRENT_BINARY_DIR}/utils-config-version.cmake"
+    VERSION ${PROJECT_VERSION}
+    COMPATIBILITY SameMajorVersion
+)
+
+install(
+    FILES "${CMAKE_CURRENT_BINARY_DIR}/utils-config-version.cmake"
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/utils
 )

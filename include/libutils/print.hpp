@@ -9,9 +9,9 @@
 #include <utility>
 #include <vector>
 
-// For printing map items
-namespace std
-{
+// operator<< for std::pair — placed in the global namespace so it is reachable
+// via unqualified lookup. Defined here rather than in namespace std (which
+// would be formally ill-formed per [namespace.std]).
 template <typename First, typename Second>
 std::ostream& operator<<(std::ostream& os,
                          std::pair<First, Second> const& p) // NOLINT
@@ -19,7 +19,6 @@ std::ostream& operator<<(std::ostream& os,
     os << "(" << p.first << ':' << p.second << ")";
     return os;
 }
-} // namespace std
 
 namespace utils::print
 {
@@ -34,7 +33,7 @@ inline std::ostream& line(std::string_view const header, char const c = '=',
                           std::size_t const s = 80,
                           std::ostream& os = std::cout)
 {
-    if (header.size() < s)
+    if (header.size() + 3 < s)
     {
         os << "===" << header << std::string(s - header.size() - 3, c) << '\n';
         return os;

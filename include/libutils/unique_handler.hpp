@@ -61,8 +61,7 @@ public:
     }
     void reset(handle value = Traits::invalid()) noexcept
     {
-        // NOTE: A test for self-reset, i.e. whether `value` points to an object already managed by `*this`, is not performed!
-        assert(value_ != value);
+        assert(value_ != value); // guard against self-reset
 
         Traits::destroy(value_);
         value_ = value;

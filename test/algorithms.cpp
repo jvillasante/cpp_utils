@@ -23,17 +23,24 @@ TEST_CASE("Algorithms - Gather")
 
     auto middle(std::begin(a) +
                 static_cast<std::string::difference_type>(std::size(a) / 2));
-    utils::algorithms::gather(std::begin(a), std::end(a), middle, is_a);
+    auto [first1, last1] =
+        utils::algorithms::gather(std::begin(a), std::end(a), middle, is_a);
     REQUIRE(a == "_____aaaaaaaaaaa_____");
+    REQUIRE(std::distance(first1, last1) == 11);
 
-    utils::algorithms::gather(std::begin(a), std::end(a), std::begin(a), is_a);
+    auto [first2, last2] = utils::algorithms::gather(
+        std::begin(a), std::end(a), std::begin(a), is_a);
     REQUIRE(a == "aaaaaaaaaaa__________");
+    REQUIRE(first2 == std::begin(a));
 
-    utils::algorithms::gather(std::begin(a), std::end(a), std::end(a), is_a);
+    auto [first3, last3] = utils::algorithms::gather(
+        std::begin(a), std::end(a), std::end(a), is_a);
     REQUIRE(a == "__________aaaaaaaaaaa");
+    REQUIRE(last3 == std::end(a));
 
-    // This will NOT work as naively expected
-    utils::algorithms::gather(std::begin(a), std::end(a), middle, is_a);
+    // This will NOT work as naively expected — already-sorted range ignored
+    [[maybe_unused]] auto [first4, last4] =
+        utils::algorithms::gather(std::begin(a), std::end(a), middle, is_a);
     REQUIRE(a == "__________aaaaaaaaaaa");
 
     std::string b{"_9_2_4_7_3_8_1_6_5_0_"};
