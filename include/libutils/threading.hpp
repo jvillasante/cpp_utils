@@ -30,7 +30,9 @@ template <typename Iter>
 void join_all(Iter first, Iter last)
 {
     std::for_each(first, last, [](std::thread& t) {
-        if (t.joinable()) { t.join(); }
+        if (t.joinable()) {
+            t.join();
+        }
     });
 }
 
@@ -57,7 +59,9 @@ struct anti_lock
 
     explicit anti_lock(Guard& guard) : mutex_(guard.mutex())
     {
-        if (mutex_) { mutex_->unlock(); }
+        if (mutex_) {
+            mutex_->unlock();
+        }
     }
 
 private:

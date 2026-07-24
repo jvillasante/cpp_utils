@@ -29,7 +29,9 @@ public:
     template <typename Tp>
     ostream_joiner& operator=(const Tp& v)
     {
-        if (!first) { *output_iter << delim; }
+        if (!first) {
+            *output_iter << delim;
+        }
 
         first = false;
         *output_iter << v;

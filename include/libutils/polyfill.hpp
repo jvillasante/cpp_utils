@@ -1,5 +1,18 @@
 #pragma once
 
+#include <cstddef>
+#include <cstring>
+#include <memory>
+#include <type_traits>
+#include <utility>
+#include <vector>
+
+// Pull in C++20 standard headers if available
+#if __cplusplus >= 202002L
+#include <bit>
+#include <span>
+#endif
+
 // __cplusplus macro definition:
 //     201103L - Cpp11
 //     201402L - Cpp14
@@ -7,32 +20,29 @@
 //     202002L - Cpp20
 //     202302L - Cpp23
 
-/**
- * Define `std::make_unique` if the compiler is C++11, but not C++14 or greater.
- * This implementation is the one proposed by Stephan T. Lavavej in
- * N3656: https://isocpp.org/files/papers/N3656.txt.
- */
-
-#if __cplusplus == 201103L
-#include <cstddef>
-#include <memory>
-#include <type_traits>
-#include <utility>
-
-// It's bad to add things to the std namespace, but the point is to "polyfill"
-// this function for C++11 compilers.
-namespace std
+namespace utils
 {
+
+// ==========================================
+// make_unique (Introduced in C++14)
+// ==========================================
+#if __cplusplus >= 201402L
+
+using std::make_unique;
+
+#else
+
+// C++11 fallback implementation proposed by Stephan T. Lavavej in N3656
 template <typename T>
 struct _Unique_if
 {
-    typedef unique_ptr<T> _Single_object;
+    typedef std::unique_ptr<T> _Single_object;
 };
 
 template <typename T>
 struct _Unique_if<T[]>
 {
-    typedef unique_ptr<T[]> _Unknown_bound;
+    typedef std::unique_ptr<T[]> _Unknown_bound;
 };
 
 template <typename T, std::size_t N>
@@ -44,33 +54,31 @@ struct _Unique_if<T[N]>
 template <typename T, typename... Args>
 typename _Unique_if<T>::_Single_object make_unique(Args&&... args)
 {
-    return unique_ptr<T>(new T(std::forward<Args>(args)...));
+    return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
 }
 
 template <typename T>
 typename _Unique_if<T>::_Unknown_bound make_unique(std::size_t n)
 {
-    typedef typename remove_extent<T>::type U;
-    return unique_ptr<T>(new U[n]());
+    typedef typename std::remove_extent<T>::type U;
+    return std::unique_ptr<T>(new U[n]());
 }
 
 template <typename T, typename... Args>
 typename _Unique_if<T>::_Known_bound make_unique(Args&&...) = delete;
-} // namespace std
-#endif // __cplusplus == 201103L
 
-/**
- * Define `std::exchange` if the compiler is C++11, but not C++14 or greater.
- */
+#endif
 
-#if __cplusplus == 201103L
-#include <type_traits>
-#include <utility>
+// ==========================================
+// exchange (Introduced in C++14)
+// ==========================================
+#if __cplusplus >= 201402L
 
-// It's bad to add things to the std namespace, but the point is to "polyfill"
-// this function for C++11 compilers.
-namespace std
-{
+using std::exchange;
+
+#else
+
+// C++11 fallback implementation
 template <typename T, typename U = T>
 T exchange(T& obj, U&& new_value) noexcept(
     std::is_nothrow_move_constructible<T>::value &&
@@ -80,51 +88,47 @@ T exchange(T& obj, U&& new_value) noexcept(
     obj = std::forward<U>(new_value);
     return old_value;
 }
-} // namespace std
-#endif // __cplusplus == 201103L
 
-/**
- * Define `std::bit_cast` if the compiler is C++11, but not C++20 or greater.
- */
+#endif
 
-#if __cplusplus >= 201103L && __cplusplus < 202002L
-#include <cstring>
-#include <type_traits>
+// ==========================================
+// bit_cast (Introduced in C++20)
+// ==========================================
+#if __cplusplus >= 202002L
 
-// It's bad to add things to the std namespace, but the point is to "polyfill"
-// this function for C++{11,14,17} compilers.
-namespace std
-{
+using std::bit_cast;
+
+#else
+
+// C++11/14/17 fallback implementation
 template <typename To, typename From>
-std::enable_if_t<sizeof(To) == sizeof(From) &&
-                     std::is_trivially_copyable_v<From> &&
-                     std::is_trivially_copyable_v<To>,
-                 To>
+typename std::enable_if<sizeof(To) == sizeof(From) &&
+                            std::is_trivially_copyable<From>::value &&
+                            std::is_trivially_copyable<To>::value,
+                        To>::type
 bit_cast(From const& src) noexcept
 {
-    static_assert(std::is_trivially_constructible_v<To>,
+    static_assert(std::is_trivially_constructible<To>::value,
                   "This implementation additionally requires "
                   "destination type to be trivially constructible");
 
-    To dst{};
+    To dst;
     std::memcpy(&dst, &src, sizeof(To));
     return dst;
 }
-} // namespace std
-#endif // __cplusplus == 201103L
 
-/**
- * Define `std::span` for compilers older than C++20.
- * It's bad to add things to the std namespace, but the point is to "polyfill"
- * this type for pre-C++20 compilers.
- */
+#endif
 
-#if __cplusplus < 202002L
-#include <cstddef>
-#include <vector>
+// ==========================================
+// span (Introduced in C++20)
+// ==========================================
+#if __cplusplus >= 202002L
 
-namespace std
-{
+using std::span;
+
+#else
+
+// Pre-C++20 fallback implementation
 template <typename T>
 class span
 {
@@ -132,6 +136,7 @@ public:
     span() = default;
     span(T* data, std::size_t size) : data_(data), size_(size) {}
     span(T* begin, T* end) : data_(begin), size_(end - begin) {}
+
     template <typename U>
     explicit span(std::vector<U> const& vec)
         : data_(vec.data()), size_(vec.size())
@@ -148,5 +153,6 @@ private:
     T* data_ = nullptr;
     std::size_t size_ = 0;
 };
-} // namespace std
-#endif // __cplusplus < 202002L
+
+#endif
+} // namespace utils

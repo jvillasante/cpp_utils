@@ -20,12 +20,10 @@ class TypeDisplayer;
 // Google Test better std::cout
 //
 #define PRINTF(...)                                                            \
-    do                                                                         \
-    {                                                                          \
+    do {                                                                       \
         printf("%s", "[      OUT>] ");                                         \
         printf(__VA_ARGS__);                                                   \
-    }                                                                          \
-    while (0)
+    } while (0)
 
 // C++ stream interface
 class gtest_cout : public std::stringstream
@@ -101,17 +99,23 @@ struct StatsCounter
     static void clear_stat(LifetimeStats const key) { stats_.at(key) = 0; }
     static void clear_stats()
     {
-        for (auto& [_, value] : stats_) { value = 0; }
+        for (auto& [_, value] : stats_) {
+            value = 0;
+        }
     }
     static void increment_stat(LifetimeStats const key) { stats_.at(key)++; }
     static void increment_stats(std::initializer_list<LifetimeStats const> il)
     {
-        for (LifetimeStats const key : il) { increment_stat(key); }
+        for (LifetimeStats const key : il) {
+            increment_stat(key);
+        }
     }
     static void decrement_stat(LifetimeStats const key) { stats_.at(key)--; }
     static void decrement_stats(std::initializer_list<LifetimeStats const> il)
     {
-        for (LifetimeStats const key : il) { decrement_stat(key); }
+        for (LifetimeStats const key : il) {
+            decrement_stat(key);
+        }
     }
     static std::size_t get_stat(LifetimeStats const key)
     {
@@ -151,26 +155,28 @@ public:
     {
         Base::increment_stats(
             {DefaultConstructor, ObjectCount, ObjectTotalCount});
-        if constexpr (Print) { print(std::source_location::current(), this); }
+        if constexpr (Print) {
+            print(std::source_location::current(), this);
+        }
     }
     Lifetime(T value) noexcept : value_(value) // NOLINT (explicit-conversion)
     {
         Base::increment_stats({Constructor, ObjectCount, ObjectTotalCount});
-        if constexpr (Print) { print(std::source_location::current(), this); }
+        if constexpr (Print) {
+            print(std::source_location::current(), this);
+        }
     }
     Lifetime(Lifetime const& rhs) noexcept : value_(rhs.value_)
     {
         Base::increment_stats({CopyConstructor, ObjectCount, ObjectTotalCount});
-        if constexpr (Print)
-        {
+        if constexpr (Print) {
             print(std::source_location::current(), this, &rhs);
         }
     }
     Lifetime(Lifetime&& rhs) noexcept : value_(std::move(rhs.value_))
     {
         Base::increment_stats({MoveConstructor, ObjectCount, ObjectTotalCount});
-        if constexpr (Print)
-        {
+        if constexpr (Print) {
             print(std::source_location::current(), this, &rhs);
         }
     }
@@ -178,15 +184,16 @@ public:
     {
         Base::increment_stat(Destructor);
         Base::decrement_stat(ObjectCount);
-        if constexpr (Print) { print(std::source_location::current(), this); }
+        if constexpr (Print) {
+            print(std::source_location::current(), this);
+        }
     }
     Lifetime& operator=(Lifetime const& rhs) noexcept // NOLINT (don't care
                                                       // about self assignment)
     {
         value_ = rhs.value_;
         Base::increment_stat(CopyAssignment);
-        if constexpr (Print)
-        {
+        if constexpr (Print) {
             print(std::source_location::current(), this, &rhs);
         }
         return *this;
@@ -196,8 +203,7 @@ public:
     {
         value_ = std::move(rhs.value_);
         Base::increment_stat(MoveAssignment);
-        if constexpr (Print)
-        {
+        if constexpr (Print) {
             print(std::source_location::current(), this, &rhs);
         }
         return *this;
@@ -236,12 +242,10 @@ private:
                Lifetime const* other = nullptr) const
     {
         std::cout << loc.function_name();
-        if (self != nullptr)
-        {
+        if (self != nullptr) {
             std::cout << "\n\t self=" << self->value_ << " @ " << self;
         }
-        if (other != nullptr)
-        {
+        if (other != nullptr) {
             std::cout << "\n\t  rhs=" << other->value_ << " @ " << other;
         }
         std::cout << '\n';

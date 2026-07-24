@@ -52,7 +52,9 @@ public:
         // In general, 1 is the best option and the one used here.
 
         // NOTE: if `func_()` throws, `std::terminate()` will be called!
-        if (!dismissed_) { func_(); }
+        if (!dismissed_) {
+            func_();
+        }
     }
 
 private:

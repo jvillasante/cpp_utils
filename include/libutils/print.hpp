@@ -33,8 +33,7 @@ inline std::ostream& line(std::string_view const header, char const c = '=',
                           std::size_t const s = 80,
                           std::ostream& os = std::cout)
 {
-    if (header.size() + 3 < s)
-    {
+    if (header.size() + 3 < s) {
         os << "===" << header << std::string(s - header.size() - 3, c) << '\n';
         return os;
     }

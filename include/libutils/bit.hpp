@@ -17,7 +17,7 @@ template <typename To>
     static_assert(std::is_trivially_constructible_v<To>);
     static_assert(std::is_trivially_copyable_v<To>);
 
-    To ret{};
+    To ret;
     std::memcpy(&ret, bytes, sizeof(To));
     return ret;
 }
@@ -26,6 +26,7 @@ template <typename From>
 [[nodiscard]] std::byte* as_bytes(From& from)
 {
     static_assert(std::is_trivially_copyable_v<From>);
+
     // NOLINTNEXTLINE
     return reinterpret_cast<std::byte*>(&from);
 }
@@ -34,6 +35,7 @@ template <typename From>
 [[nodiscard]] std::byte const* as_bytes(From const& from)
 {
     static_assert(std::is_trivially_copyable_v<From>);
+
     // NOLINTNEXTLINE
     return reinterpret_cast<std::byte const*>(&from);
 }

@@ -11,8 +11,7 @@ template <typename T>
 void quick_remove_at(std::vector<T>& v,
                      typename std::vector<T>::size_type const idx)
 {
-    if (idx < v.size())
-    {
+    if (idx < v.size()) {
         v[idx] = std::move(v.back());
         v.pop_back();
     }
@@ -22,8 +21,7 @@ template <typename T>
 void quick_remove_at(std::vector<T>& v,
                      typename std::vector<T>::iterator const it)
 {
-    if (it != std::end(v))
-    {
+    if (it != std::end(v)) {
         *it = std::move(v.back());
         v.pop_back();
     }
@@ -58,8 +56,8 @@ template <typename Collection>
 [[nodiscard]] double memory_utilization(Collection const& x)
 {
     using value_type = typename Collection::value_type;
-    double useful(std::size(x) * sizeof(value_type));
-    double total(static_cast<double>(areaof(x)));
+    double useful{std::size(x) * sizeof(value_type)};
+    auto total{static_cast<double>(areaof(x))};
     return useful / total;
 }
 
@@ -67,8 +65,8 @@ template <typename Collection>
 template <typename T, typename Allocator>
 [[nodiscard]] double memory_utilization(std::vector<T, Allocator> const& x)
 {
-    double useful(static_cast<double>(x.size() * sizeof(T)));
-    double total(static_cast<double>(areaof(x)));
+    auto useful{static_cast<double>(x.size() * sizeof(T))};
+    auto total{static_cast<double>(areaof(x))};
     return useful / total;
 }
 } // namespace utils::collections

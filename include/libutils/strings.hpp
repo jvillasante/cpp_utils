@@ -77,14 +77,18 @@ template <typename CharT>
 inline void to_upper(tstring<CharT>& text)
 {
     std::transform(std::begin(text), std::end(text), std::begin(text),
-                   [](CharT const& ch) { return my_toupper(ch); });
+                   [](CharT const& ch) {
+                       return my_toupper(ch);
+                   });
 }
 
 template <typename CharT>
 inline void to_lower(tstring<CharT>& text)
 {
     std::transform(std::begin(text), std::end(text), std::begin(text),
-                   [](CharT const& ch) { return my_tolower(ch); });
+                   [](CharT const& ch) {
+                       return my_tolower(ch);
+                   });
 }
 
 template <typename CharT>
@@ -96,9 +100,8 @@ inline void reverse(tstring<CharT>& text)
 template <typename CharT>
 inline void trim(tstring<CharT>& text)
 {
-    text.erase(text.begin(),
-               std::find_if_not(text.begin(), text.end(),
-                                detail::is_whitespace<CharT>));
+    text.erase(text.begin(), std::find_if_not(text.begin(), text.end(),
+                                              detail::is_whitespace<CharT>));
     text.erase(std::find_if_not(text.rbegin(), text.rend(),
                                 detail::is_whitespace<CharT>)
                    .base(),
@@ -108,9 +111,8 @@ inline void trim(tstring<CharT>& text)
 template <typename CharT>
 inline void trimleft(tstring<CharT>& text)
 {
-    text.erase(text.begin(),
-               std::find_if_not(text.begin(), text.end(),
-                                detail::is_whitespace<CharT>));
+    text.erase(text.begin(), std::find_if_not(text.begin(), text.end(),
+                                              detail::is_whitespace<CharT>));
 }
 
 template <typename CharT>
@@ -146,8 +148,7 @@ template <typename CharT>
 bool contains(tstringview<CharT> const input, tstringview<CharT> const needle,
               bool const ignore_case = false)
 {
-    if (input.size() >= needle.size())
-    {
+    if (input.size() >= needle.size()) {
         return std::search(std::begin(input), std::end(input),
                            std::begin(needle), std::end(needle),
                            [&](CharT const c1, CharT const c2) {
@@ -165,8 +166,7 @@ template <typename CharT>
                          tstringview<CharT> const str2,
                          bool const ignore_case = false)
 {
-    if (str1.size() == str2.size())
-    {
+    if (str1.size() == str2.size()) {
         return std::equal(str1.begin(), str1.end(), str2.begin(),
                           [=](CharT const c1, CharT const c2) {
                               return ignore_case
@@ -204,7 +204,9 @@ template <typename CharT>
 {
     auto const first = std::find_if_not(text.begin(), text.end(),
                                         detail::is_whitespace<CharT>);
-    if (first == text.end()) { return {}; }
+    if (first == text.end()) {
+        return {};
+    }
     auto const last = std::find_if_not(text.rbegin(), text.rend(),
                                        detail::is_whitespace<CharT>);
     return tstring<CharT>(first, last.base());
@@ -213,18 +215,18 @@ template <typename CharT>
 template <typename CharT>
 [[nodiscard]] inline tstring<CharT> trimleft(tstring<CharT> const& text)
 {
-    return tstring<CharT>(
-        std::find_if_not(text.begin(), text.end(), detail::is_whitespace<CharT>),
-        text.end());
+    return tstring<CharT>(std::find_if_not(text.begin(), text.end(),
+                                           detail::is_whitespace<CharT>),
+                          text.end());
 }
 
 template <typename CharT>
 [[nodiscard]] inline tstring<CharT> trimright(tstring<CharT> const& text)
 {
-    return tstring<CharT>(
-        text.begin(),
-        std::find_if_not(text.rbegin(), text.rend(), detail::is_whitespace<CharT>)
-            .base());
+    return tstring<CharT>(text.begin(),
+                          std::find_if_not(text.rbegin(), text.rend(),
+                                           detail::is_whitespace<CharT>)
+                              .base());
 }
 
 template <typename CharT>
@@ -232,7 +234,9 @@ template <typename CharT>
                                          tstring<CharT> const& chars)
 {
     auto const first{text.find_first_not_of(chars)};
-    if (first == std::string::npos) { return {}; }
+    if (first == std::string::npos) {
+        return {};
+    }
 
     auto const last{text.find_last_not_of(chars)};
     return text.substr(first, (last - first + 1));
@@ -243,7 +247,9 @@ template <typename CharT>
                                              tstring<CharT> const& chars)
 {
     auto const first{text.find_first_not_of(chars)};
-    if (first == std::string::npos) { return {}; }
+    if (first == std::string::npos) {
+        return {};
+    }
 
     return text.substr(first, text.size() - first);
 }
@@ -259,8 +265,10 @@ template <typename CharT>
 template <typename CharT>
 [[nodiscard]] inline tstring<CharT> remove(tstring<CharT> text, CharT const ch)
 {
-    auto const start = std::remove_if(std::begin(text), std::end(text),
-                                      [=](CharT const c) { return c == ch; });
+    auto const start =
+        std::remove_if(std::begin(text), std::end(text), [=](CharT const c) {
+            return c == ch;
+        });
     text.erase(start, std::end(text));
     return text;
 }
@@ -289,9 +297,10 @@ template <typename CharT>
     tstringstream<CharT> sstr{std::move(text)};
     std::vector<tstring<CharT>> tokens;
     tstring<CharT> token;
-    while (std::getline(sstr, token, delimiter))
-    {
-        if (!token.empty()) { tokens.emplace_back(token); }
+    while (std::getline(sstr, token, delimiter)) {
+        if (!token.empty()) {
+            tokens.emplace_back(token);
+        }
     }
 
     return tokens;
@@ -305,18 +314,15 @@ split(tstring<CharT> const& text, tstring<CharT> const& delimiters)
     std::size_t pos = 0;
     std::size_t prev_pos = 0;
     while ((pos = text.find_first_of(delimiters, prev_pos)) !=
-           std::string::npos)
-    {
-        if (pos > prev_pos)
-        {
+           std::string::npos) {
+        if (pos > prev_pos) {
             tokens.emplace_back(text.substr(prev_pos, pos - prev_pos));
         }
 
         prev_pos = pos + 1;
     }
 
-    if (prev_pos < text.size())
-    {
+    if (prev_pos < text.size()) {
         tokens.emplace_back(text.substr(prev_pos, std::string::npos));
     }
 
@@ -329,22 +335,24 @@ template <typename CharT, typename Iter>
                                            bool insert_spaces = false)
 {
     tstringstream<CharT> oss;
-    if (use_uppercase) { oss.setf(std::ios_base::uppercase); }
+    if (use_uppercase) {
+        oss.setf(std::ios_base::uppercase);
+    }
 
-    for (auto current = begin; current != end; ++current)
-    {
+    for (auto current = begin; current != end; ++current) {
         oss << std::hex << std::setw(2) << std::setfill('0')
             << static_cast<int>(*current);
-        if (insert_spaces && std::next(current) != end) { oss << ' '; }
+        if (insert_spaces && std::next(current) != end) {
+            oss << ' ';
+        }
     }
 
     return oss.str();
 }
 
 template <typename CharT, typename C>
-[[nodiscard]] inline tstring<CharT> to_hex(C const& c,
-                                           bool use_uppercase = true,
-                                           bool insert_spaces = false)
+[[nodiscard]] inline tstring<CharT>
+to_hex(C const& c, bool use_uppercase = true, bool insert_spaces = false)
 {
     return to_hex<CharT>(std::cbegin(c), std::cend(c), use_uppercase,
                          insert_spaces);
@@ -355,9 +363,15 @@ template <typename CharT>
 [[nodiscard]] std::vector<std::byte> hex_to_bytes(tstringview<CharT> const str)
 {
     auto const hexchar_to_int = [](CharT const ch) {
-        if (ch >= '0' && ch <= '9') { return ch - '0'; }
-        if (ch >= 'A' && ch <= 'F') { return ch - 'A' + 10; }
-        if (ch >= 'a' && ch <= 'f') { return ch - 'a' + 10; }
+        if (ch >= '0' && ch <= '9') {
+            return ch - '0';
+        }
+        if (ch >= 'A' && ch <= 'F') {
+            return ch - 'A' + 10;
+        }
+        if (ch >= 'a' && ch <= 'f') {
+            return ch - 'a' + 10;
+        }
 
         throw std::invalid_argument("Invalid hexadecimal character");
     };
@@ -366,19 +380,15 @@ template <typename CharT>
     auto const size{str.size()};
 
     std::size_t i{0};
-    if (size % 2 != 0)
-    {
-        result.push_back(
-            static_cast<std::byte>((hexchar_to_int('0') << 4) |
-                                   hexchar_to_int(str[i])));
+    if (size % 2 != 0) {
+        result.push_back(static_cast<std::byte>((hexchar_to_int('0') << 4) |
+                                                hexchar_to_int(str[i])));
         ++i;
     }
 
-    for (; i < size; i += 2)
-    {
-        result.push_back(
-            static_cast<std::byte>((hexchar_to_int(str[i]) << 4) |
-                                   hexchar_to_int(str[i + 1])));
+    for (; i < size; i += 2) {
+        result.push_back(static_cast<std::byte>((hexchar_to_int(str[i]) << 4) |
+                                                hexchar_to_int(str[i + 1])));
     }
 
     return result;
@@ -402,8 +412,7 @@ template <typename T, typename StringLike>
     auto const sv = std::string_view(str);
     auto const [ptr, ec] =
         std::from_chars(sv.data(), sv.data() + sv.size(), value);
-    if (ec != std::errc{})
-    {
+    if (ec != std::errc{}) {
         throw std::invalid_argument("to_integral: conversion failed");
     }
     return value;

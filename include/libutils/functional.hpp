@@ -19,8 +19,7 @@ template <typename F, typename T, typename U>
 [[nodiscard]] inline std::map<T, U> mapf(F&& f, const std::map<T, U>& m)
 {
     std::map<T, U> r;
-    for (auto&& kvp : m)
-    {
+    for (auto&& kvp : m) {
         r.insert(std::forward<F>(f)(std::forward<decltype(kvp)>(kvp)));
     }
 
@@ -32,8 +31,7 @@ template <typename F, typename T>
 {
     std::queue<T> r;
 
-    while (!q.empty())
-    {
+    while (!q.empty()) {
         r.push(std::forward<F>(f)(std::forward<T>(q.front())));
         q.pop();
     }
@@ -62,8 +60,7 @@ template <typename F, typename R, typename T>
 template <typename F, typename T>
 [[nodiscard]] constexpr T foldl(F&& f, std::queue<T> q, T i)
 {
-    while (!q.empty())
-    {
+    while (!q.empty()) {
         i = std::forward<F>(f)(std::forward<T>(i), std::forward<T>(q.front()));
         q.pop();
     }
@@ -95,17 +92,20 @@ template <typename T>
 template <typename T, typename... Ts>
 [[nodiscard]] auto concat(T t, Ts... ts)
 {
-    if constexpr (sizeof...(ts) > 0)
-    {
-        return
-            [=](auto... parameters) { return t(concat(ts...)(parameters...)); };
+    if constexpr (sizeof...(ts) > 0) {
+        return [=](auto... parameters) {
+            return t(concat(ts...)(parameters...));
+        };
+    } else {
+        return t;
     }
-    else { return t; }
 }
 
 template <typename A, typename B, typename F>
 [[nodiscard]] auto combine(F binary_func, A a, B b)
 {
-    return [=](auto const param) { return binary_func(a(param), b(param)); };
+    return [=](auto const param) {
+        return binary_func(a(param), b(param));
+    };
 }
 } // namespace utils::functional

@@ -31,7 +31,9 @@ template <typename T>
     static_assert(std::is_floating_point_v<T>);
 
     T diff = std::abs(lhs - rhs);
-    if (diff <= epsilon) { return true; }
+    if (diff <= epsilon) {
+        return true;
+    }
 
     return (diff <= (std::max(std::abs(lhs), std::abs(rhs)) * epsilon));
 }
@@ -58,7 +60,9 @@ public:
         sum_ -= previous_inputs_[index_];
         sum_ += input;
         previous_inputs_[index_] = input;
-        if (++index_ == N) { index_ = 0; }
+        if (++index_ == N) {
+            index_ = 0;
+        }
         return (sum_ + (N / 2)) / N;
     }
 

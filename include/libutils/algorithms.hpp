@@ -10,12 +10,13 @@ template <typename InputIt, typename OutputIt, typename T, typename F>
 InputIt split(InputIt it, InputIt end_it, OutputIt out_it, T split_val,
               F bin_func)
 {
-    while (it != end_it)
-    {
+    while (it != end_it) {
         auto const slice_end{std::find(it, end_it, split_val)};
         *out_it++ = bin_func(it, slice_end);
 
-        if (slice_end == end_it) { return end_it; }
+        if (slice_end == end_it) {
+            return end_it;
+        }
         it = std::next(slice_end);
     }
 
@@ -23,7 +24,8 @@ InputIt split(InputIt it, InputIt end_it, OutputIt out_it, T split_val,
 }
 
 template <typename It, typename F>
-[[nodiscard]] std::pair<It, It> gather(It first, It last, It gather_pos, F predicate)
+[[nodiscard]] std::pair<It, It> gather(It first, It last, It gather_pos,
+                                       F predicate)
 {
     return std::make_pair(
         std::stable_partition(first, gather_pos, std::not_fn(predicate)),
