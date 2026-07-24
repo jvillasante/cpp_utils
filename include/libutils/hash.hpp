@@ -14,11 +14,9 @@
  *     namespace std {
  *     template <>
  *     struct hash<Point> {
- *         using argument_type = Point;
- *         using result_type = std::size_t;
- *         result_type operator()(argument_type const& c) const noexcept
+ *         std::size_t operator()(Point const& c) const noexcept
  *         {
- *             result_type seed{0};
+ *             std::size_t seed{0};
  *             utils::hash::combine(seed, c.x);
  *             utils::hash::combine(seed, c.y);
  *             return seed;
