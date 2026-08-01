@@ -2,7 +2,6 @@
 
 #include <catch2/catch_test_macros.hpp>
 #include <cstdint>
-#include <vector>
 
 TEST_CASE("Bit - get_bit")
 {
@@ -80,17 +79,29 @@ TEST_CASE("Bit - invert_bit_range")
     REQUIRE(utils::bit::invert_bit_range(0b11111u, 1u, 3u) == 0b10001u);
 }
 
-TEST_CASE("Bit - from_bytes / as_bytes roundtrip")
+TEST_CASE("Bit - test_bit")
 {
-    std::uint32_t const original = 0xDEADBEEFu;
-    std::byte const* bytes = utils::bit::as_bytes(original);
-    auto const restored = utils::bit::from_bytes<std::uint32_t>(bytes);
-    REQUIRE(original == restored);
+    REQUIRE(utils::bit::test_bit(0b1010u, 1));
+    REQUIRE_FALSE(utils::bit::test_bit(0b1010u, 0));
+    REQUIRE(utils::bit::test_bit(0b1010u, 3));
+
+    // 64-bit position beyond 32.
+    std::uint64_t const val = std::uint64_t{1} << 40;
+    REQUIRE(utils::bit::test_bit(val, 40));
+    REQUIRE_FALSE(utils::bit::test_bit(val, 39));
 }
 
-TEST_CASE("Bit - to_string_view")
+TEST_CASE("Bit - mask")
 {
-    std::vector<std::byte> data{std::byte{'H'}, std::byte{'i'}};
-    auto sv = utils::bit::to_string_view(data);
-    REQUIRE(sv == "Hi");
+    REQUIRE(utils::bit::mask<std::uint32_t>(0u, 3u) == 0b1111u);
+    REQUIRE(utils::bit::mask<std::uint32_t>(4u, 7u) == 0xF0u);
+    REQUIRE(utils::bit::mask<std::uint32_t>(2u, 2u) == 0b100u);
+    REQUIRE(utils::bit::mask<std::uint8_t>(0u, 7u) == 0xFFu);
+
+    // Full width must not overflow the shift.
+    REQUIRE(utils::bit::mask<std::uint32_t>(0u, 31u) == 0xFFFFFFFFu);
+    REQUIRE(utils::bit::mask<std::uint64_t>(0u, 63u) == 0xFFFFFFFFFFFFFFFFull);
+
+    // Usable in a constant expression.
+    static_assert(utils::bit::mask<std::uint32_t>(4u, 7u) == 0xF0u);
 }

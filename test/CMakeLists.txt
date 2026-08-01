@@ -15,6 +15,7 @@ set(UTILS_TEST_STANDARDS 17 20 23)
 set(UTILS_TESTS
     algorithms
     bit
+    bytes
     chrono
     collections
     functional

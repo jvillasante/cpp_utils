@@ -34,7 +34,7 @@ TEST_CASE("Lifetime - copy constructor")
 {
     LT<int>::clear_stats();
     LT<int> a{1};
-    LT<int> const& b{a};
+    LT<int> b{a}; // NOLINT
     REQUIRE(b.value() == 1);
     REQUIRE(LT<int>::get_stat(LifetimeStats::CopyConstructor) == 1);
     REQUIRE(LT<int>::get_stat(LifetimeStats::ObjectCount) == 2);

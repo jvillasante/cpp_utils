@@ -1,8 +1,10 @@
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
 #include <cstring>
 #include <iterator>
+#include <limits>
 #include <memory>
 #include <type_traits>
 #include <utility>
@@ -232,6 +234,212 @@ private:
     T* data_ = nullptr;
     std::size_t size_ = 0;
 };
+
+#endif
+
+// ==========================================
+// endian (Introduced in C++20)
+// ==========================================
+#if defined(__cpp_lib_endian) || UTILS_CPLUSPLUS >= 202002L
+
+using std::endian;
+
+#else
+
+// Pre-C++20 fallback. GCC and Clang expose the target byte order through
+// built-in macros; MSVC targets are always little-endian.
+#if defined(_MSVC_LANG)
+enum class endian : std::uint8_t
+{
+    little = 0,
+    big = 1,
+    native = little,
+};
+#else
+enum class endian // NOLINT
+{
+    little = __ORDER_LITTLE_ENDIAN__,
+    big = __ORDER_BIG_ENDIAN__,
+    native = __BYTE_ORDER__,
+};
+#endif
+
+#endif
+
+// ==========================================
+// byteswap (Introduced in C++23)
+// ==========================================
+#if defined(__cpp_lib_byteswap) || UTILS_CPLUSPLUS >= 202302L
+
+using std::byteswap;
+
+#else
+
+// Pre-C++23 fallback: reverse the object representation of an integer. The
+// standard restricts byteswap to integral types with no padding bits, which
+// every standard integer type satisfies.
+template <typename T>
+constexpr T byteswap(T value) noexcept
+{
+    static_assert(std::is_integral<T>::value,
+                  "byteswap requires an integral type");
+    using U = typename std::make_unsigned<T>::type;
+    U const in = static_cast<U>(value);
+    U out = 0;
+    for (std::size_t i = 0; i < sizeof(T); ++i) {
+        out = static_cast<U>(
+            static_cast<U>(out << 8) |
+            static_cast<U>((in >> (i * 8)) & static_cast<U>(0xFF)));
+    }
+    return static_cast<T>(out);
+}
+
+#endif
+
+// ==========================================
+// bit operations from <bit> (Introduced in C++20)
+//   rotl, rotr, countl_zero, countl_one, countr_zero, countr_one, popcount,
+//   has_single_bit, bit_width, bit_ceil, bit_floor
+// ==========================================
+#if defined(__cpp_lib_bitops) || UTILS_CPLUSPLUS >= 202002L
+
+using std::bit_ceil;
+using std::bit_floor;
+using std::bit_width;
+using std::countl_one;
+using std::countl_zero;
+using std::countr_one;
+using std::countr_zero;
+using std::has_single_bit;
+using std::popcount;
+using std::rotl;
+using std::rotr;
+
+#else
+
+// Pre-C++20 fallbacks. All operate on unsigned integer types, matching the
+// standard's constraints, and mirror the std semantics so the behavior is
+// identical whether the fallback or the std version is selected.
+
+template <typename T>
+constexpr int popcount(T x) noexcept
+{
+    static_assert(std::is_unsigned<T>::value,
+                  "bit operations require an unsigned integer type");
+    int count = 0;
+    while (x != 0) {
+        x = static_cast<T>(x & static_cast<T>(x - 1));
+        ++count;
+    }
+    return count;
+}
+
+template <typename T>
+constexpr int countr_zero(T x) noexcept
+{
+    static_assert(std::is_unsigned<T>::value,
+                  "bit operations require an unsigned integer type");
+    constexpr int digits = std::numeric_limits<T>::digits;
+    for (int i = 0; i < digits; ++i) {
+        if (((x >> i) & T{1}) != 0) {
+            return i;
+        }
+    }
+    return digits;
+}
+
+template <typename T>
+constexpr int countl_zero(T x) noexcept
+{
+    static_assert(std::is_unsigned<T>::value,
+                  "bit operations require an unsigned integer type");
+    constexpr int digits = std::numeric_limits<T>::digits;
+    for (int i = 0; i < digits; ++i) {
+        if (((x >> (digits - 1 - i)) & T{1}) != 0) {
+            return i;
+        }
+    }
+    return digits;
+}
+
+template <typename T>
+constexpr int countr_one(T x) noexcept
+{
+    return countr_zero(static_cast<T>(~x));
+}
+
+template <typename T>
+constexpr int countl_one(T x) noexcept
+{
+    return countl_zero(static_cast<T>(~x));
+}
+
+template <typename T>
+constexpr int bit_width(T x) noexcept
+{
+    static_assert(std::is_unsigned<T>::value,
+                  "bit operations require an unsigned integer type");
+    return std::numeric_limits<T>::digits - countl_zero(x);
+}
+
+template <typename T>
+constexpr bool has_single_bit(T x) noexcept
+{
+    static_assert(std::is_unsigned<T>::value,
+                  "bit operations require an unsigned integer type");
+    return x != 0 && (x & static_cast<T>(x - 1)) == 0;
+}
+
+template <typename T>
+constexpr T bit_floor(T x) noexcept
+{
+    static_assert(std::is_unsigned<T>::value,
+                  "bit operations require an unsigned integer type");
+    return x == 0 ? T{0} : static_cast<T>(T{1} << (bit_width(x) - 1));
+}
+
+template <typename T>
+constexpr T bit_ceil(T x) noexcept
+{
+    static_assert(std::is_unsigned<T>::value,
+                  "bit operations require an unsigned integer type");
+    return x <= 1 ? T{1}
+                  : static_cast<T>(T{1} << bit_width(static_cast<T>(x - 1)));
+}
+
+template <typename T>
+constexpr T rotl(T x, int s) noexcept
+{
+    static_assert(std::is_unsigned<T>::value,
+                  "bit operations require an unsigned integer type");
+    constexpr int digits = std::numeric_limits<T>::digits;
+    int r = s % digits;
+    if (r < 0) {
+        r += digits;
+    }
+    if (r == 0) {
+        return x;
+    }
+    return static_cast<T>(static_cast<T>(x << r) |
+                          static_cast<T>(x >> (digits - r)));
+}
+
+template <typename T>
+constexpr T rotr(T x, int s) noexcept
+{
+    static_assert(std::is_unsigned<T>::value,
+                  "bit operations require an unsigned integer type");
+    constexpr int digits = std::numeric_limits<T>::digits;
+    int r = s % digits;
+    if (r < 0) {
+        r += digits;
+    }
+    if (r == 0) {
+        return x;
+    }
+    return static_cast<T>(static_cast<T>(x >> r) |
+                          static_cast<T>(x << (digits - r)));
+}
 
 #endif
 } // namespace utils

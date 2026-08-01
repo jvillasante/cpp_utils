@@ -215,3 +215,215 @@ TEST_CASE("Strings - mutable_version::reverse")
     utils::strings::mutable_version::reverse<char>(s);
     REQUIRE(s == "dcba");
 }
+
+TEST_CASE("Strings - replace_all substring")
+{
+    REQUIRE(utils::strings::replace_all<char>("a.b.c", ".", "::") ==
+            "a::b::c");
+    // to contains from: must not re-scan the replacement (no infinite loop).
+    REQUIRE(utils::strings::replace_all<char>("aaa", "a", "aa") == "aaaaaa");
+    // Deletion.
+    REQUIRE(utils::strings::replace_all<char>("a-b-c", "-", "") == "abc");
+    // Empty from is a no-op.
+    REQUIRE(utils::strings::replace_all<char>("abc", "", "x") == "abc");
+    // No match.
+    REQUIRE(utils::strings::replace_all<char>("abc", "z", "y") == "abc");
+}
+
+TEST_CASE("Strings - replace_all single char")
+{
+    REQUIRE(utils::strings::replace_all<char>(std::string{"a.b.c"}, '.', '_') ==
+            "a_b_c");
+}
+
+TEST_CASE("Strings - replace_first")
+{
+    REQUIRE(utils::strings::replace_first<char>("a.b.c", ".", "::") ==
+            "a::b.c");
+    REQUIRE(utils::strings::replace_first<char>("abc", "z", "y") == "abc");
+    REQUIRE(utils::strings::replace_first<char>("abc", "", "y") == "abc");
+}
+
+TEST_CASE("Strings - starts_with / ends_with with ignore_case")
+{
+    REQUIRE(utils::strings::starts_with<char>("hello", "he"));
+    REQUIRE_FALSE(utils::strings::starts_with<char>("hello", "HE"));
+    REQUIRE(utils::strings::starts_with<char>("hello", "HE", true));
+    REQUIRE_FALSE(utils::strings::starts_with<char>("hi", "hello"));
+
+    REQUIRE(utils::strings::ends_with<char>("hello", "lo"));
+    REQUIRE_FALSE(utils::strings::ends_with<char>("hello", "LO"));
+    REQUIRE(utils::strings::ends_with<char>("hello", "LO", true));
+    REQUIRE_FALSE(utils::strings::ends_with<char>("hi", "hello"));
+}
+
+TEST_CASE("Strings - split keep_empty")
+{
+    auto skipped = utils::strings::split<char>(std::string_view{"a,,c"}, ',');
+    REQUIRE(skipped.size() == 2);
+    REQUIRE(skipped[0] == "a");
+    REQUIRE(skipped[1] == "c");
+
+    auto kept =
+        utils::strings::split<char>(std::string_view{"a,,c"}, ',', true);
+    REQUIRE(kept.size() == 3);
+    REQUIRE(kept[0] == "a");
+    REQUIRE(kept[1].empty());
+    REQUIRE(kept[2] == "c");
+
+    // Leading and trailing empties are preserved too.
+    auto edges =
+        utils::strings::split<char>(std::string_view{",a,"}, ',', true);
+    REQUIRE(edges.size() == 3);
+    REQUIRE(edges[0].empty());
+    REQUIRE(edges[1] == "a");
+    REQUIRE(edges[2].empty());
+}
+
+TEST_CASE("Strings - split_view keep_empty")
+{
+    auto kept = utils::strings::split_view<char>(std::string_view{"a,,c"}, ',',
+                                                 true);
+    REQUIRE(kept.size() == 3);
+    REQUIRE(kept[1].empty());
+}
+
+TEST_CASE("Strings - split_on whole delimiter")
+{
+    auto tokens =
+        utils::strings::split_on<char>(std::string_view{"a->b->c"},
+                                       std::string_view{"->"});
+    REQUIRE(tokens.size() == 3);
+    REQUIRE(tokens[0] == "a");
+    REQUIRE(tokens[1] == "b");
+    REQUIRE(tokens[2] == "c");
+
+    // Contrast with the char-set split, which would break on '-' and '>'.
+    auto as_set = utils::strings::split<char>(std::string_view{"a->b"},
+                                              std::string_view{"->"});
+    REQUIRE(as_set.size() == 2);
+    REQUIRE(as_set[0] == "a");
+    REQUIRE(as_set[1] == "b");
+
+    // keep_empty across adjacent delimiters.
+    auto kept = utils::strings::split_on<char>(std::string_view{"a--b"},
+                                               std::string_view{"-"}, true);
+    REQUIRE(kept.size() == 3);
+    REQUIRE(kept[1].empty());
+
+    // Empty delimiter yields the whole input.
+    auto whole = utils::strings::split_on_view<char>(std::string_view{"abc"},
+                                                     std::string_view{""});
+    REQUIRE(whole.size() == 1);
+    REQUIRE(whole[0] == "abc");
+}
+
+TEST_CASE("Strings - join separator overloads")
+{
+    std::vector<std::string> v{"a", "b", "c"};
+    REQUIRE(utils::strings::join<char>(v, ',') == "a,b,c");
+    REQUIRE(utils::strings::join<char>(v, std::string{", "}) == "a, b, c");
+    REQUIRE(utils::strings::join<char>(v, "--") == "a--b--c");
+}
+
+TEST_CASE("Strings - pad_left / pad_right / center")
+{
+    REQUIRE(utils::strings::pad_left<char>("42", 5) == "   42");
+    REQUIRE(utils::strings::pad_left<char>("42", 5, '0') == "00042");
+    REQUIRE(utils::strings::pad_right<char>("42", 5) == "42   ");
+    REQUIRE(utils::strings::center<char>("ab", 6, '*') == "**ab**");
+    // Odd padding: extra goes right.
+    REQUIRE(utils::strings::center<char>("ab", 5, '*') == "*ab**");
+    // Already at/over width: unchanged.
+    REQUIRE(utils::strings::pad_left<char>("hello", 3) == "hello");
+    REQUIRE(utils::strings::center<char>("hello", 3) == "hello");
+}
+
+TEST_CASE("Strings - repeat")
+{
+    REQUIRE(utils::strings::repeat<char>("ab", 3) == "ababab");
+    REQUIRE(utils::strings::repeat<char>('x', 4) == "xxxx");
+    REQUIRE(utils::strings::repeat<char>("ab", 0).empty());
+}
+
+#if defined(__cpp_lib_to_chars)
+TEST_CASE("Strings - to_floating")
+{
+    REQUIRE(utils::strings::to_floating<double>("3.5") == 3.5);
+    REQUIRE(utils::strings::to_floating<double>("-0.25") == -0.25);
+    REQUIRE_THROWS_AS(utils::strings::to_floating<double>("abc"),
+                      std::invalid_argument);
+    // Trailing garbage rejected.
+    REQUIRE_THROWS_AS(utils::strings::to_floating<double>("3.5x"),
+                      std::invalid_argument);
+}
+#endif
+
+TEST_CASE("Strings - replace_all forms new matches but does not re-scan")
+{
+    // Each original char expands; inserted text must not be re-replaced.
+    REQUIRE(utils::strings::replace_all<char>("xx", "x", "xx") == "xxxx");
+    // Overlapping source collapses correctly.
+    REQUIRE(utils::strings::replace_all<char>("aaaa", "aa", "b") == "bb");
+    // Whole string is one match.
+    REQUIRE(utils::strings::replace_all<char>("abc", "abc", "z") == "z");
+}
+
+TEST_CASE("Strings - split all-delimiters and boundaries")
+{
+    // All delimiters, skip vs keep.
+    REQUIRE(utils::strings::split<char>(std::string_view{",,,"}, ',').empty());
+    auto kept = utils::strings::split<char>(std::string_view{",,,"}, ',', true);
+    REQUIRE(kept.size() == 4);
+    for (auto const& t : kept) {
+        REQUIRE(t.empty());
+    }
+
+    // Empty input.
+    REQUIRE(utils::strings::split<char>(std::string_view{""}, ',').empty());
+    auto empty_kept =
+        utils::strings::split<char>(std::string_view{""}, ',', true);
+    REQUIRE(empty_kept.size() == 1);
+    REQUIRE(empty_kept[0].empty());
+}
+
+TEST_CASE("Strings - split_on delimiter at start and end")
+{
+    auto t = utils::strings::split_on<char>(std::string_view{"::a::b::"},
+                                            std::string_view{"::"});
+    // Leading and trailing empties skipped by default.
+    REQUIRE(t.size() == 2);
+    REQUIRE(t[0] == "a");
+    REQUIRE(t[1] == "b");
+
+    auto kept = utils::strings::split_on<char>(std::string_view{"::a::"},
+                                               std::string_view{"::"}, true);
+    REQUIRE(kept.size() == 3);
+    REQUIRE(kept[0].empty());
+    REQUIRE(kept[1] == "a");
+    REQUIRE(kept[2].empty());
+
+    // Delimiter longer than text.
+    auto none = utils::strings::split_on<char>(std::string_view{"ab"},
+                                               std::string_view{"abcd"});
+    REQUIRE(none.size() == 1);
+    REQUIRE(none[0] == "ab");
+}
+
+TEST_CASE("Strings - generic over wchar_t (no locale paths)")
+{
+    using namespace std::literals;
+    REQUIRE(utils::strings::replace_all<wchar_t>(L"a.b.c", L".", L"::") ==
+            L"a::b::c");
+    REQUIRE(utils::strings::pad_left<wchar_t>(L"42", 5, L'0') == L"00042");
+    REQUIRE(utils::strings::repeat<wchar_t>(L"ab", 3) == L"ababab");
+
+    auto tokens = utils::strings::split_on<wchar_t>(std::wstring_view{L"a->b"},
+                                                    std::wstring_view{L"->"});
+    REQUIRE(tokens.size() == 2);
+    REQUIRE(tokens[0] == L"a");
+    REQUIRE(tokens[1] == L"b");
+
+    std::vector<std::wstring> v{L"x", L"y", L"z"};
+    REQUIRE(utils::strings::join<wchar_t>(v, L',') == L"x,y,z");
+}

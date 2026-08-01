@@ -2,6 +2,7 @@
 
 #include <libutils/algorithms.hpp>
 #include <libutils/bit.hpp>
+#include <libutils/bytes.hpp>
 #include <libutils/chrono.hpp>
 #include <libutils/collections.hpp>
 #include <libutils/functional.hpp>

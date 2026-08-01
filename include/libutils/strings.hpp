@@ -141,19 +141,38 @@ inline void trimright(tstring<CharT>& text)
 template <typename CharT>
 [[nodiscard]]
 inline bool starts_with(tstringview<CharT> const str,
-                        tstringview<CharT> const prefix)
+                        tstringview<CharT> const prefix,
+                        bool const ignore_case = false)
 {
-    return str.substr(0, prefix.size()) == prefix;
+    if (str.size() < prefix.size()) {
+        return false;
+    }
+    if (!ignore_case) {
+        return str.substr(0, prefix.size()) == prefix;
+    }
+    return std::equal(prefix.begin(), prefix.end(), str.begin(),
+                      [](CharT const c1, CharT const c2) {
+                          return my_tolower(c1) == my_tolower(c2);
+                      });
 }
 
 template <typename CharT>
 [[nodiscard]]
 inline bool ends_with(tstringview<CharT> const input,
-                      tstringview<CharT> const suffix)
+                      tstringview<CharT> const suffix,
+                      bool const ignore_case = false)
 {
-    return (input.size() >= suffix.size()) &&
-           (0 ==
-            input.compare(input.size() - suffix.size(), suffix.size(), suffix));
+    if (input.size() < suffix.size()) {
+        return false;
+    }
+    auto const tail = input.substr(input.size() - suffix.size());
+    if (!ignore_case) {
+        return tail == suffix;
+    }
+    return std::equal(suffix.begin(), suffix.end(), tail.begin(),
+                      [](CharT const c1, CharT const c2) {
+                          return my_tolower(c1) == my_tolower(c2);
+                      });
 }
 
 template <typename CharT>
@@ -286,6 +305,51 @@ template <typename CharT>
     return text;
 }
 
+// Replace every non-overlapping occurrence of `from` with `to`. An empty `from`
+// is a no-op (returns the input unchanged) rather than looping forever.
+template <typename CharT>
+[[nodiscard]] inline tstring<CharT> replace_all(tstring<CharT> text,
+                                                tstringview<CharT> const from,
+                                                tstringview<CharT> const to)
+{
+    if (from.empty()) {
+        return text;
+    }
+
+    std::size_t pos = 0;
+    while ((pos = text.find(from, pos)) != tstring<CharT>::npos) {
+        text.replace(pos, from.size(), to.data(), to.size());
+        pos += to.size(); // skip the replacement so `to` is not re-scanned
+    }
+    return text;
+}
+
+// Single-character replace convenience overload.
+template <typename CharT>
+[[nodiscard]] inline tstring<CharT>
+replace_all(tstring<CharT> text, CharT const from, CharT const to)
+{
+    std::replace(std::begin(text), std::end(text), from, to);
+    return text;
+}
+
+// Replace only the first occurrence of `from` with `to`.
+template <typename CharT>
+[[nodiscard]] inline tstring<CharT> replace_first(tstring<CharT> text,
+                                                  tstringview<CharT> const from,
+                                                  tstringview<CharT> const to)
+{
+    if (from.empty()) {
+        return text;
+    }
+
+    auto const pos = text.find(from);
+    if (pos != tstring<CharT>::npos) {
+        text.replace(pos, from.size(), to.data(), to.size());
+    }
+    return text;
+}
+
 template <typename CharT, typename Iter>
 [[nodiscard]] inline tstring<CharT> join(Iter begin, Iter end,
                                          CharT const* const separator)
@@ -303,65 +367,45 @@ template <typename CharT, typename C>
     return join(std::cbegin(c), std::cend(c), separator);
 }
 
-template <typename CharT>
-[[nodiscard]] inline std::vector<tstring<CharT>> split(tstring<CharT> text,
-                                                       CharT const delimiter)
+// Single-character separator convenience overload.
+template <typename CharT, typename C>
+[[nodiscard]] inline tstring<CharT> join(C const& c, CharT const separator)
 {
-    tstringstream<CharT> sstr{std::move(text)};
-    std::vector<tstring<CharT>> tokens;
-    tstring<CharT> token;
-    while (std::getline(sstr, token, delimiter)) {
-        if (!token.empty()) {
-            tokens.emplace_back(token);
-        }
-    }
-
-    return tokens;
+    tstring<CharT> const sep(1, separator);
+    return join<CharT>(std::cbegin(c), std::cend(c), sep.c_str());
 }
 
-template <typename CharT>
-[[nodiscard]] inline std::vector<tstring<CharT>>
-split(tstring<CharT> const& text, tstring<CharT> const& delimiters)
+// String separator convenience overload.
+template <typename CharT, typename C>
+[[nodiscard]] inline tstring<CharT> join(C const& c,
+                                         tstring<CharT> const& separator)
 {
-    std::vector<tstring<CharT>> tokens;
-    std::size_t pos = 0;
-    std::size_t prev_pos = 0;
-    while ((pos = text.find_first_of(delimiters, prev_pos)) !=
-           std::string::npos) {
-        if (pos > prev_pos) {
-            tokens.emplace_back(text.substr(prev_pos, pos - prev_pos));
-        }
-
-        prev_pos = pos + 1;
-    }
-
-    if (prev_pos < text.size()) {
-        tokens.emplace_back(text.substr(prev_pos, std::string::npos));
-    }
-
-    return tokens;
+    return join<CharT>(std::cbegin(c), std::cend(c), separator.c_str());
 }
 
-// Non-owning split: returns views into `text`, which must outlive the result.
-// Allocates only the token vector, not the tokens themselves. Empty tokens are
-// skipped, matching split().
+// Non-owning split on a SET of single-character delimiters: returns views into
+// `text`, which must outlive the result. Allocates only the token vector, not
+// the tokens themselves. With keep_empty == false (the default) empty tokens
+// between adjacent/leading/trailing delimiters are skipped; with keep_empty ==
+// true they are preserved (e.g. for CSV fields).
 template <typename CharT>
 [[nodiscard]] inline std::vector<tstringview<CharT>>
-split_view(tstringview<CharT> const text, tstringview<CharT> const delimiters)
+split_view(tstringview<CharT> const text, tstringview<CharT> const delimiters,
+           bool const keep_empty = false)
 {
     std::vector<tstringview<CharT>> tokens;
     std::size_t pos = 0;
     std::size_t prev_pos = 0;
     while ((pos = text.find_first_of(delimiters, prev_pos)) !=
            tstringview<CharT>::npos) {
-        if (pos > prev_pos) {
+        if (pos > prev_pos || keep_empty) {
             tokens.push_back(text.substr(prev_pos, pos - prev_pos));
         }
 
         prev_pos = pos + 1;
     }
 
-    if (prev_pos < text.size()) {
+    if (prev_pos < text.size() || keep_empty) {
         tokens.push_back(text.substr(prev_pos));
     }
 
@@ -371,9 +415,80 @@ split_view(tstringview<CharT> const text, tstringview<CharT> const delimiters)
 // Single-character delimiter convenience overload.
 template <typename CharT>
 [[nodiscard]] inline std::vector<tstringview<CharT>>
-split_view(tstringview<CharT> const text, CharT const delimiter)
+split_view(tstringview<CharT> const text, CharT const delimiter,
+           bool const keep_empty = false)
 {
-    return split_view<CharT>(text, tstringview<CharT>(&delimiter, 1));
+    return split_view<CharT>(text, tstringview<CharT>(&delimiter, 1),
+                             keep_empty);
+}
+
+// Non-owning split on a WHOLE multi-character delimiter (the entire `delimiter`
+// sequence is matched), as opposed to split_view() which treats its argument as
+// a set of single-character delimiters. An empty delimiter yields the whole
+// input as a single token.
+template <typename CharT>
+[[nodiscard]] inline std::vector<tstringview<CharT>>
+split_on_view(tstringview<CharT> const text, tstringview<CharT> const delimiter,
+              bool const keep_empty = false)
+{
+    std::vector<tstringview<CharT>> tokens;
+    if (delimiter.empty()) {
+        tokens.push_back(text);
+        return tokens;
+    }
+
+    std::size_t pos = 0;
+    std::size_t prev_pos = 0;
+    while ((pos = text.find(delimiter, prev_pos)) != tstringview<CharT>::npos) {
+        if (pos > prev_pos || keep_empty) {
+            tokens.push_back(text.substr(prev_pos, pos - prev_pos));
+        }
+
+        prev_pos = pos + delimiter.size();
+    }
+
+    if (prev_pos < text.size() || keep_empty) {
+        tokens.push_back(text.substr(prev_pos));
+    }
+
+    return tokens;
+}
+
+// Owning splits: materialize the views from the *_view functions into strings.
+template <typename CharT>
+[[nodiscard]] inline std::vector<tstring<CharT>>
+split(tstringview<CharT> const text, CharT const delimiter,
+      bool const keep_empty = false)
+{
+    std::vector<tstring<CharT>> tokens;
+    for (auto const token : split_view<CharT>(text, delimiter, keep_empty)) {
+        tokens.emplace_back(token);
+    }
+    return tokens;
+}
+
+template <typename CharT>
+[[nodiscard]] inline std::vector<tstring<CharT>>
+split(tstringview<CharT> const text, tstringview<CharT> const delimiters,
+      bool const keep_empty = false)
+{
+    std::vector<tstring<CharT>> tokens;
+    for (auto const token : split_view<CharT>(text, delimiters, keep_empty)) {
+        tokens.emplace_back(token);
+    }
+    return tokens;
+}
+
+template <typename CharT>
+[[nodiscard]] inline std::vector<tstring<CharT>>
+split_on(tstringview<CharT> const text, tstringview<CharT> const delimiter,
+         bool const keep_empty = false)
+{
+    std::vector<tstring<CharT>> tokens;
+    for (auto const token : split_on_view<CharT>(text, delimiter, keep_empty)) {
+        tokens.emplace_back(token);
+    }
+    return tokens;
 }
 
 template <typename CharT, typename Iter>
@@ -465,5 +580,101 @@ template <typename T, typename StringLike>
         throw std::invalid_argument("to_integral: conversion failed");
     }
     return value;
+}
+
+// Converts a string to a floating-point type using std::from_chars.
+// Throws std::invalid_argument on failure. Only available when the standard
+// library provides floating-point from_chars (libstdc++ >= 11, recent libc++);
+// __cpp_lib_to_chars is defined exactly when that support is complete.
+#if defined(__cpp_lib_to_chars)
+template <typename T, typename StringLike>
+[[nodiscard]] T to_floating(StringLike&& str)
+{
+    static_assert(std::is_floating_point_v<T>,
+                  "T must be a floating-point type");
+    T value{};
+    auto const sv = std::string_view(str);
+    auto const [ptr, ec] =
+        std::from_chars(sv.data(), sv.data() + sv.size(), value);
+    if (ec != std::errc{} || ptr != sv.data() + sv.size()) {
+        throw std::invalid_argument("to_floating: conversion failed");
+    }
+    return value;
+}
+#endif
+
+// ----------
+// Fixed-width formatting
+// ----------
+
+// Left-pad `text` with `fill` up to `width`. Shorter-than-width only; longer
+// strings are returned unchanged.
+template <typename CharT>
+[[nodiscard]] inline tstring<CharT> pad_left(tstring<CharT> text,
+                                             std::size_t const width,
+                                             CharT const fill = CharT{' '})
+{
+    if (text.size() < width) {
+        text.insert(text.begin(), width - text.size(), fill);
+    }
+    return text;
+}
+
+// Right-pad `text` with `fill` up to `width`.
+template <typename CharT>
+[[nodiscard]] inline tstring<CharT> pad_right(tstring<CharT> text,
+                                              std::size_t const width,
+                                              CharT const fill = CharT{' '})
+{
+    if (text.size() < width) {
+        text.append(width - text.size(), fill);
+    }
+    return text;
+}
+
+// Center `text` within `width`, padding both sides with `fill`. When the
+// padding is odd, the extra character goes on the right.
+template <typename CharT>
+[[nodiscard]] inline tstring<CharT> center(tstring<CharT> const& text,
+                                           std::size_t const width,
+                                           CharT const fill = CharT{' '})
+{
+    if (text.size() >= width) {
+        return text;
+    }
+    std::size_t const total = width - text.size();
+    std::size_t const left = total / 2;
+    std::size_t const right = total - left;
+    tstring<CharT> out;
+    out.reserve(width);
+    out.append(left, fill);
+    out.append(text);
+    out.append(right, fill);
+    return out;
+}
+
+// ----------
+// Repetition
+// ----------
+
+// Repeat a multi-character unit `count` times.
+template <typename CharT>
+[[nodiscard]] inline tstring<CharT> repeat(tstringview<CharT> const unit,
+                                           std::size_t const count)
+{
+    tstring<CharT> out;
+    out.reserve(unit.size() * count);
+    for (std::size_t i = 0; i < count; ++i) {
+        out.append(unit.data(), unit.size());
+    }
+    return out;
+}
+
+// Repeat a single character `count` times.
+template <typename CharT>
+[[nodiscard]] inline tstring<CharT> repeat(CharT const ch,
+                                           std::size_t const count)
+{
+    return tstring<CharT>(count, ch);
 }
 } // namespace utils::strings

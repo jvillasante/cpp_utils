@@ -2,12 +2,9 @@
 
 #include <cassert>
 #include <cstddef>
-#include <cstring>
 
 #include <limits>
-#include <string_view>
 #include <type_traits>
-#include <vector>
 
 namespace utils::bit
 {
@@ -25,62 +22,40 @@ template <typename T>
 }
 } // namespace detail
 
-template <typename To>
-[[nodiscard]] To from_bytes(std::byte const* bytes)
+// A mask of type T with bits [start, end] (inclusive) set and all others clear.
+// Handy alongside the *_bit_range functions when you need the mask directly.
+template <typename T>
+[[nodiscard]] constexpr T mask(std::size_t start, std::size_t end)
 {
-    static_assert(std::is_trivially_constructible_v<To>);
-    static_assert(std::is_trivially_copyable_v<To>);
-
-    To ret;
-    std::memcpy(&ret, bytes, sizeof(To));
-    return ret;
-}
-
-template <typename From>
-[[nodiscard]] std::byte* as_bytes(From& from)
-{
-    static_assert(std::is_trivially_copyable_v<From>);
-
-    // NOLINTNEXTLINE
-    return reinterpret_cast<std::byte*>(&from);
-}
-
-template <typename From>
-[[nodiscard]] std::byte const* as_bytes(From const& from)
-{
-    static_assert(std::is_trivially_copyable_v<From>);
-
-    // NOLINTNEXTLINE
-    return reinterpret_cast<std::byte const*>(&from);
-}
-
-[[nodiscard]] inline std::string_view to_string_view(std::byte const* data,
-                                                     std::size_t size)
-{
-    // NOLINTNEXTLINE
-    return {reinterpret_cast<char const*>(data), size};
-}
-
-[[nodiscard]] inline std::string_view
-to_string_view(std::vector<std::byte> const& data)
-{
-    return to_string_view(data.data(), data.size());
+    static_assert(std::is_unsigned_v<T>);
+    assert(start < std::numeric_limits<T>::digits);
+    assert(end < std::numeric_limits<T>::digits);
+    assert(start <= end);
+    return static_cast<T>(detail::low_bits_mask<T>(end - start + 1) << start);
 }
 
 template <typename T>
 [[nodiscard]] T get_bit(T num, std::size_t pos)
 {
     static_assert(std::is_unsigned_v<T>);
-
     assert(pos < std::numeric_limits<T>::digits);
     return (num >> pos) & T{1};
+}
+
+// Predicate form of get_bit: true when the bit at pos is set. Reads more
+// naturally in a condition than `get_bit(x, pos) != 0`.
+template <typename T>
+[[nodiscard]] bool test_bit(T num, std::size_t pos)
+{
+    static_assert(std::is_unsigned_v<T>);
+    assert(pos < std::numeric_limits<T>::digits);
+    return ((num >> pos) & T{1}) != 0;
 }
 
 template <typename T>
 [[nodiscard]] T set_bit(T num, std::size_t pos, bool value)
 {
     static_assert(std::is_unsigned_v<T>);
-
     assert(pos < std::numeric_limits<T>::digits);
     return value ? (num | (T{1} << pos)) : (num & ~(T{1} << pos));
 }
@@ -89,7 +64,6 @@ template <typename T>
 [[nodiscard]] T invert_bit(T num, std::size_t pos)
 {
     static_assert(std::is_unsigned_v<T>);
-
     assert(pos < std::numeric_limits<T>::digits);
     return (num ^ (T{1} << pos));
 }
@@ -98,7 +72,6 @@ template <typename T>
 [[nodiscard]] T get_bit_range(T num, std::size_t start, std::size_t end)
 {
     static_assert(std::is_unsigned_v<T>);
-
     assert(start < std::numeric_limits<T>::digits);
     assert(end < std::numeric_limits<T>::digits);
     assert(start <= end);
@@ -111,7 +84,6 @@ template <typename T>
                               std::size_t value)
 {
     static_assert(std::is_unsigned_v<T>);
-
     assert(start < std::numeric_limits<T>::digits);
     assert(end < std::numeric_limits<T>::digits);
     assert(start <= end);
@@ -126,7 +98,6 @@ template <typename T>
 [[nodiscard]] T invert_bit_range(T num, std::size_t start, std::size_t end)
 {
     static_assert(std::is_unsigned_v<T>);
-
     assert(start < std::numeric_limits<T>::digits);
     assert(end < std::numeric_limits<T>::digits);
     assert(start <= end);

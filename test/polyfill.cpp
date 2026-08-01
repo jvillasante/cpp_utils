@@ -42,6 +42,74 @@ TEST_CASE("polyfill - bit_cast")
     REQUIRE(utils::bit_cast<float>(bits) == 1.0f);
 }
 
+TEST_CASE("polyfill - popcount")
+{
+    REQUIRE(utils::popcount(std::uint32_t{0}) == 0);
+    REQUIRE(utils::popcount(std::uint32_t{0b1011}) == 3);
+    REQUIRE(utils::popcount(std::uint8_t{0xFF}) == 8);
+    REQUIRE(utils::popcount(std::uint64_t{0xFFFFFFFFFFFFFFFFull}) == 64);
+}
+
+TEST_CASE("polyfill - count leading / trailing zeros and ones")
+{
+    REQUIRE(utils::countr_zero(std::uint32_t{0b1000}) == 3);
+    REQUIRE(utils::countr_zero(std::uint32_t{0}) == 32);
+    REQUIRE(utils::countl_zero(std::uint32_t{1}) == 31);
+    REQUIRE(utils::countl_zero(std::uint32_t{0}) == 32);
+
+    REQUIRE(utils::countr_one(std::uint32_t{0b0111}) == 3);
+    REQUIRE(utils::countr_one(std::uint32_t{0}) == 0);
+    REQUIRE(utils::countl_one(std::uint8_t{0xF0}) == 4);
+    REQUIRE(utils::countl_one(std::uint8_t{0xFF}) == 8);
+}
+
+TEST_CASE("polyfill - bit_width")
+{
+    REQUIRE(utils::bit_width(std::uint32_t{0}) == 0);
+    REQUIRE(utils::bit_width(std::uint32_t{1}) == 1);
+    REQUIRE(utils::bit_width(std::uint32_t{0b1011}) == 4);
+    REQUIRE(utils::bit_width(std::uint8_t{0xFF}) == 8);
+}
+
+TEST_CASE("polyfill - has_single_bit")
+{
+    REQUIRE(utils::has_single_bit(std::uint32_t{1}));
+    REQUIRE(utils::has_single_bit(std::uint32_t{0b10000}));
+    REQUIRE_FALSE(utils::has_single_bit(std::uint32_t{0}));
+    REQUIRE_FALSE(utils::has_single_bit(std::uint32_t{0b1010}));
+}
+
+TEST_CASE("polyfill - bit_floor / bit_ceil")
+{
+    REQUIRE(utils::bit_floor(std::uint32_t{0}) == 0u);
+    REQUIRE(utils::bit_floor(std::uint32_t{1}) == 1u);
+    REQUIRE(utils::bit_floor(std::uint32_t{0b1011}) == 0b1000u);
+    REQUIRE(utils::bit_floor(std::uint32_t{16}) == 16u);
+
+    REQUIRE(utils::bit_ceil(std::uint32_t{0}) == 1u);
+    REQUIRE(utils::bit_ceil(std::uint32_t{1}) == 1u);
+    REQUIRE(utils::bit_ceil(std::uint32_t{5}) == 8u);
+    REQUIRE(utils::bit_ceil(std::uint32_t{16}) == 16u);
+}
+
+TEST_CASE("polyfill - rotl / rotr")
+{
+    REQUIRE(utils::rotl(std::uint8_t{0b0001}, 1) == std::uint8_t{0b0010});
+    REQUIRE(utils::rotl(std::uint8_t{0b10000000}, 1) == std::uint8_t{0b0000'0001});
+    REQUIRE(utils::rotr(std::uint8_t{0b0001}, 1) == std::uint8_t{0b10000000});
+
+    // Negative and over-wide shifts match std semantics.
+    REQUIRE(utils::rotl(std::uint8_t{0b0001}, -1) ==
+            utils::rotr(std::uint8_t{0b0001}, 1));
+    REQUIRE(utils::rotl(std::uint8_t{0b0001}, 8) == std::uint8_t{0b0001});
+    REQUIRE(utils::rotl(std::uint8_t{0b0001}, 9) ==
+            utils::rotl(std::uint8_t{0b0001}, 1));
+
+    // A round trip is identity.
+    REQUIRE(utils::rotr(utils::rotl(std::uint32_t{0xDEADBEEFu}, 13), 13) ==
+            0xDEADBEEFu);
+}
+
 TEST_CASE("span - default constructed is empty")
 {
     utils::span<int> s;

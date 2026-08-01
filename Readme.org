@@ -16,7 +16,14 @@ projects.
 Each header lives under =include/libutils/= in the =utils= namespace:
 
 - *algorithms* : =split=, =gather=, =gather_sort=.
-- *bit* : bit get/set/invert (single and ranges), byte <-> value casts.
+- *bit* : bit get/set/invert/test (single and ranges) and =mask= on unsigned
+  integers. Standard =<bit>= operations (=popcount=, =rotl=, ...) live in
+  =polyfill=.
+- *bytes* : object <-> raw-byte casts (=from_bytes=, =as_bytes=, =to_byte_vector=),
+  =to_string_view= over byte buffers, =byte_view= / =writable_byte_view= over strings
+  and typed spans, endianness conversion, endian-aware buffer load/store
+  (raw-pointer and bounds-checked span forms), and =byte_reader= / =byte_writer=
+  sequential cursors with throwing and non-throwing (=try_*=) reads/writes.
 - *chrono* : =perf_timer= for timing callables (with or without a result).
 - *collections* : =quick_remove_at=, =insert_sorted=, memory-usage helpers.
 - *functional* : =mapf=, =foldl/foldr=, and map/filter/concat transducers.
@@ -25,11 +32,19 @@ Each header lives under =include/libutils/= in the =utils= namespace:
 - *math* : =is_even/odd=, =nearly_equal=, =random=, =simple_moving_average=.
 - *overloaded* : the =std::visit= overload-set helper.
 - *print* : line/collection/vector printing helpers.
-- *polyfill* : =span=, =make_unique=, =exchange=, =bit_cast= fallbacks for
-  pre-C++20 (uses the standard versions when available).
+- *polyfill* : =span=, =make_unique=, =exchange=, =bit_cast=, =endian=,
+  =byteswap=, and the =<bit>= operations (=popcount=, =countl_zero=/=countr_zero=
+  and the =_one= variants, =bit_width=, =has_single_bit=, =bit_ceil=/=bit_floor=,
+  =rotl=/=rotr=) as fallbacks for pre-C++20/23 (uses the standard versions when
+  available).
 - *scope_guard* : =ScopeGuard= plus =ON_SCOPE_EXIT= macros.
 - *smart_pointers* : =static_ptr_cast=, =dynamic_ptr_cast= for =unique_ptr=.
-- *strings* : trim/case/join/split (owning and =split_view=), hex, =to_integral=.
+- *strings* : case (=to_upper=/=to_lower=), trim (whitespace and charset),
+  =starts_with=/=ends_with=/=contains=/=equal= (case-optional), =replace_all= /
+  =replace_first= / =remove=, =join= (char/string/cstring separators), =split= /
+  =split_view= (char-set, =keep_empty=) and =split_on= (whole delimiter), hex
+  round-trip (=to_hex= / =hex_to_bytes=), numeric parse (=to_integral= /
+  =to_floating=), =pad_left= / =pad_right= / =center=, and =repeat=.
 - *testing* : =Lifetime<T>= special-member counters, =gtest_cout=.
 - *threading* : =pcout=, =join_all=, =anti_lock=.
 - *unique_handler* : =UniqueHandle= RAII wrapper for C-style handles.
