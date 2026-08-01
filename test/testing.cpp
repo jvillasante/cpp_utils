@@ -34,7 +34,7 @@ TEST_CASE("Lifetime - copy constructor")
 {
     LT<int>::clear_stats();
     LT<int> a{1};
-    LT<int> b{a};
+    LT<int> const& b{a};
     REQUIRE(b.value() == 1);
     REQUIRE(LT<int>::get_stat(LifetimeStats::CopyConstructor) == 1);
     REQUIRE(LT<int>::get_stat(LifetimeStats::ObjectCount) == 2);
@@ -93,13 +93,16 @@ TEST_CASE("Lifetime - non-member swap")
     REQUIRE(LT<int>::get_stat(LifetimeStats::MemberSwap) == 1);
 }
 
-TEST_CASE("Lifetime - CRTP isolation: Lifetime<int> and Lifetime<string> have separate counters")
+TEST_CASE("Lifetime - CRTP isolation: Lifetime<int> and Lifetime<string> have "
+          "separate counters")
 {
     LT<int>::clear_stats();
     LT<std::string>::clear_stats();
 
     // Create 1 int by value constructor
-    { LT<int> i{42}; }
+    {
+        LT<int> i{42};
+    }
 
     // Create 3 strings by default constructor
     {

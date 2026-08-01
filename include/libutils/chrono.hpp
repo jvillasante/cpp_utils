@@ -2,6 +2,8 @@
 
 #include <chrono>
 #include <functional>
+#include <type_traits>
+#include <utility>
 
 namespace utils::chrono
 {
@@ -37,6 +39,26 @@ struct perf_timer
         auto end = Clock::now();
 
         return std::chrono::duration_cast<Time>(end - start);
+    }
+
+    // Like duration(), but also returns the callable's result as
+    // {elapsed_time, result}. For void-returning callables use duration().
+    template <typename F, typename... Args>
+    static std::pair<Time, std::invoke_result_t<F, Args...>>
+    duration_with_result(F&& f, Args&&... args)
+    {
+        using result_type = std::invoke_result_t<F, Args...>;
+        static_assert(!std::is_void_v<result_type>,
+                      "duration_with_result requires a non-void callable; "
+                      "use duration() instead");
+
+        auto start = Clock::now();
+        result_type result =
+            std::invoke(std::forward<F>(f), std::forward<Args>(args)...);
+        auto end = Clock::now();
+
+        return {std::chrono::duration_cast<Time>(end - start),
+                std::move(result)};
     }
 };
 } // namespace utils::chrono

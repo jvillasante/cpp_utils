@@ -1,61 +1,54 @@
 include(${PROJECT_SOURCE_DIR}/cmake/Catch2.cmake)
+include(Catch)
 
-add_executable(algorithms algorithms.cpp)
-target_link_libraries(algorithms
-    PRIVATE utils::libutils Catch2::Catch2WithMain)
-add_test(algorithms ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/algorithms)
+# Build the entire test suite across a matrix of C++ standards. The library
+# only mandates a C++17 floor (see src/libutils/CMakeLists.txt); consumers pick
+# their own standard, so we verify every one we claim to support. Each test
+# source becomes one executable per standard, named <test>_cxx<std> (e.g.
+# strings_cxx17, strings_cxx20, strings_cxx23).
+#
+# The polyfill target is special only in that its fallbacks activate below
+# C++20; the matrix exercises both paths for free (polyfill_cxx17 uses the
+# fallbacks, polyfill_cxx20/23 use the std versions).
+set(UTILS_TEST_STANDARDS 17 20 23)
 
-add_executable(bit bit.cpp)
-target_link_libraries(bit
-    PRIVATE utils::libutils Catch2::Catch2WithMain)
-add_test(bit ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/bit)
+set(UTILS_TESTS
+    algorithms
+    bit
+    chrono
+    collections
+    functional
+    hash
+    iterators
+    math
+    overloaded
+    polyfill
+    print
+    scope_guard
+    smart_pointers
+    strings
+    testing
+    threading
+    unique_handle)
 
-add_executable(collections collections.cpp)
-target_link_libraries(collections
-    PRIVATE utils::libutils Catch2::Catch2WithMain)
-add_test(collections ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/collections)
+foreach(test IN LISTS UTILS_TESTS)
+    foreach(std IN LISTS UTILS_TEST_STANDARDS)
+        set(target ${test}_cxx${std})
+        add_executable(${target} ${test}.cpp)
+        target_link_libraries(${target}
+            PRIVATE
+                utils::libutils
+                Catch2::Catch2WithMain)
+        set_target_properties(${target}
+            PROPERTIES
+                CXX_STANDARD ${std}
+                CXX_STANDARD_REQUIRED ON
+                CXX_EXTENSIONS OFF)
+        target_compile_options(${target}
+            PRIVATE
+                -Wno-c2y-extensions)
 
-add_executable(functional functional.cpp)
-target_link_libraries(functional
-    PRIVATE utils::libutils Catch2::Catch2WithMain)
-add_test(functional ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/functional)
-
-add_executable(hash hash.cpp)
-target_link_libraries(hash
-    PRIVATE utils::libutils Catch2::Catch2WithMain)
-add_test(hash ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/hash)
-
-add_executable(math math.cpp)
-target_link_libraries(math
-    PRIVATE utils::libutils Catch2::Catch2WithMain)
-add_test(math ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/math)
-
-add_executable(scope_guard scope_guard.cpp)
-target_link_libraries(scope_guard
-    PRIVATE utils::libutils Catch2::Catch2WithMain)
-add_test(scope_guard ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/scope_guard)
-
-add_executable(smart_pointers smart_pointers.cpp)
-target_link_libraries(smart_pointers
-    PRIVATE utils::libutils Catch2::Catch2WithMain)
-add_test(smart_pointers ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/smart_pointers)
-
-add_executable(strings strings.cpp)
-target_link_libraries(strings
-    PRIVATE utils::libutils Catch2::Catch2WithMain)
-add_test(strings ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/strings)
-
-add_executable(testing testing.cpp)
-target_link_libraries(testing
-    PRIVATE utils::libutils Catch2::Catch2WithMain)
-add_test(testing ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/testing)
-
-add_executable(print print.cpp)
-target_link_libraries(print
-    PRIVATE utils::libutils Catch2::Catch2WithMain)
-add_test(print ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/print)
-
-add_executable(unique_handle unique_handle.cpp)
-target_link_libraries(unique_handle
-    PRIVATE utils::libutils Catch2::Catch2WithMain)
-add_test(unique_handle ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/unique_handle)
+        # Let Catch2 register each TEST_CASE individually
+        catch_discover_tests(${target})
+    endforeach()
+endforeach()

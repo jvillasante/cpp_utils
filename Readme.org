@@ -1,11 +1,72 @@
 #+title: C++ Utilities
-#+description: Some useful C++ utilities
+#+description: Small, header-only C++ utilities
 #+author: Julio C. Villasante
 
-These are some simple utilities for C++ programming
-I normally install them to have them system-wide
+A personal collection of small, header-only C++ utilities I reuse across
+projects.
 
+* Requirements
+- A C++17 or newer compiler (tested on GCC and Clang, standards 17/20/23).
+- Header-only: nothing to build or link for the library itself.
+- The library requires *at least* C++17 but does not pin a standard. Consuming
+  projects pick their own (17, 20, 23, ...); anything older than 17 is bumped up
+  to the floor.
+
+* What's included
+Each header lives under =include/libutils/= in the =utils= namespace:
+
+- *algorithms* : =split=, =gather=, =gather_sort=.
+- *bit* : bit get/set/invert (single and ranges), byte <-> value casts.
+- *chrono* : =perf_timer= for timing callables (with or without a result).
+- *collections* : =quick_remove_at=, =insert_sorted=, memory-usage helpers.
+- *functional* : =mapf=, =foldl/foldr=, and map/filter/concat transducers.
+- *hash* : boost-style =hash::combine= with a strong finalizer.
+- *iterators* : =ostream_joiner= and =make_ostream_joiner=.
+- *math* : =is_even/odd=, =nearly_equal=, =random=, =simple_moving_average=.
+- *overloaded* : the =std::visit= overload-set helper.
+- *print* : line/collection/vector printing helpers.
+- *polyfill* : =span=, =make_unique=, =exchange=, =bit_cast= fallbacks for
+  pre-C++20 (uses the standard versions when available).
+- *scope_guard* : =ScopeGuard= plus =ON_SCOPE_EXIT= macros.
+- *smart_pointers* : =static_ptr_cast=, =dynamic_ptr_cast= for =unique_ptr=.
+- *strings* : trim/case/join/split (owning and =split_view=), hex, =to_integral=.
+- *testing* : =Lifetime<T>= special-member counters, =gtest_cout=.
+- *threading* : =pcout=, =join_all=, =anti_lock=.
+- *unique_handler* : =UniqueHandle= RAII wrapper for C-style handles.
+
+Include everything with =<libutils/utils.hpp>= or pull in a single header.
+
+* Install
 #+begin_src shell
 make release
 sudo make install
+#+end_src
+
+This installs the headers and a CMake package config (=utils::libutils=).
+
+* Use from CMake
+After installing:
+
+#+begin_src cmake
+find_package(utils REQUIRED)
+target_link_libraries(my_target PRIVATE utils::libutils)
+#+end_src
+
+Or vendor it directly with FetchContent (see =cmake/CppUtils.cmake=):
+
+#+begin_src cmake
+include(FetchContent)
+FetchContent_Declare(cpp_utils
+  GIT_REPOSITORY https://github.com/jvillasante/cpp_utils.git
+  GIT_TAG        main)
+FetchContent_MakeAvailable(cpp_utils)
+target_link_libraries(my_target PRIVATE utils::libutils)
+#+end_src
+
+* Tests
+Built with Catch2. The suite runs across a C++17/20/23 matrix so every supported
+standard is exercised.
+
+#+begin_src shell
+make test    # configures the Debug build and runs ctest
 #+end_src

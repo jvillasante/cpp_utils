@@ -24,8 +24,7 @@ TEST_CASE("Math - nearly_equal")
 
 TEST_CASE("Math - random range")
 {
-    for (int i = 0; i < 100; ++i)
-    {
+    for (int i = 0; i < 100; ++i) {
         auto v = utils::math::random(1, 10);
         REQUIRE(v >= 1);
         REQUIRE(v <= 10);

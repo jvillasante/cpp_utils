@@ -2,7 +2,11 @@ add_library(libutils INTERFACE)
 add_library(utils::libutils ALIAS libutils)
 set_target_properties(libutils PROPERTIES OUTPUT_NAME utils)
 set_target_properties(libutils PROPERTIES LINKER_LANGUAGE CXX)
-target_compile_features(libutils INTERFACE cxx_std_23)
+
+# The library requires at least C++17. cxx_std_17 is a floor, not a pin:
+# consuming projects still choose their own standard (17, 20, 23, ...) and only
+# get bumped up if they request something older than 17.
+target_compile_features(libutils INTERFACE cxx_std_17)
 target_compile_options(libutils INTERFACE
     $<$<CONFIG:Debug>:-Wall -Wextra -Werror -Wpedantic>
 )

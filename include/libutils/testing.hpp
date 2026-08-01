@@ -2,10 +2,21 @@
 
 #include <cstdint>
 #include <iostream>
-#include <source_location>
 #include <sstream>
 #include <unordered_map>
 #include <utility>
+
+#if defined(__cpp_lib_source_location)
+#include <source_location>
+// C++20+: the decorated function signature via std::source_location.
+#define UTILS_LIFETIME_FUNC (std::source_location::current().function_name())
+#elif defined(__GNUC__) || defined(__clang__)
+// C++17 on GCC/Clang: __PRETTY_FUNCTION__ gives an equally decorated name.
+#define UTILS_LIFETIME_FUNC __PRETTY_FUNCTION__
+#else
+// C++17 fallback: the bare function name.
+#define UTILS_LIFETIME_FUNC __func__
+#endif
 
 namespace utils::testing
 {
@@ -140,6 +151,9 @@ private:
 };
 } // namespace internal
 
+// NOTE: the per-instantiation statistics live in a static map with no
+// synchronization. Lifetime<T> is meant for single-threaded tests; sharing one
+// instantiation across threads races on the counters.
 template <typename T, bool Print = false>
 class Lifetime : public internal::StatsCounter<Lifetime<T, Print>>
 {
@@ -148,36 +162,49 @@ class Lifetime : public internal::StatsCounter<Lifetime<T, Print>>
 public:
     // Alias for backward compatibility: Lifetime<int>::Stats::DefaultConstructor
     using Stats = LifetimeStats;
-    // Bring all enumerators into class scope: Lifetime<int>::DefaultConstructor
-    using enum LifetimeStats;
+    // Bring all enumerators into class scope: Lifetime<int>::DefaultConstructor.
+    // Spelled out rather than `using enum LifetimeStats;` so the class compiles
+    // under C++17, where `using enum` is not available.
+    static constexpr auto DefaultConstructor =
+        LifetimeStats::DefaultConstructor;
+    static constexpr auto Constructor = LifetimeStats::Constructor;
+    static constexpr auto CopyConstructor = LifetimeStats::CopyConstructor;
+    static constexpr auto MoveConstructor = LifetimeStats::MoveConstructor;
+    static constexpr auto Destructor = LifetimeStats::Destructor;
+    static constexpr auto CopyAssignment = LifetimeStats::CopyAssignment;
+    static constexpr auto MoveAssignment = LifetimeStats::MoveAssignment;
+    static constexpr auto MemberSwap = LifetimeStats::MemberSwap;
+    static constexpr auto NonMemberSwap = LifetimeStats::NonMemberSwap;
+    static constexpr auto ObjectCount = LifetimeStats::ObjectCount;
+    static constexpr auto ObjectTotalCount = LifetimeStats::ObjectTotalCount;
 
     Lifetime() noexcept : value_()
     {
         Base::increment_stats(
             {DefaultConstructor, ObjectCount, ObjectTotalCount});
         if constexpr (Print) {
-            print(std::source_location::current(), this);
+            print(UTILS_LIFETIME_FUNC, this);
         }
     }
     Lifetime(T value) noexcept : value_(value) // NOLINT (explicit-conversion)
     {
         Base::increment_stats({Constructor, ObjectCount, ObjectTotalCount});
         if constexpr (Print) {
-            print(std::source_location::current(), this);
+            print(UTILS_LIFETIME_FUNC, this);
         }
     }
     Lifetime(Lifetime const& rhs) noexcept : value_(rhs.value_)
     {
         Base::increment_stats({CopyConstructor, ObjectCount, ObjectTotalCount});
         if constexpr (Print) {
-            print(std::source_location::current(), this, &rhs);
+            print(UTILS_LIFETIME_FUNC, this, &rhs);
         }
     }
     Lifetime(Lifetime&& rhs) noexcept : value_(std::move(rhs.value_))
     {
         Base::increment_stats({MoveConstructor, ObjectCount, ObjectTotalCount});
         if constexpr (Print) {
-            print(std::source_location::current(), this, &rhs);
+            print(UTILS_LIFETIME_FUNC, this, &rhs);
         }
     }
     ~Lifetime() noexcept
@@ -185,7 +212,7 @@ public:
         Base::increment_stat(Destructor);
         Base::decrement_stat(ObjectCount);
         if constexpr (Print) {
-            print(std::source_location::current(), this);
+            print(UTILS_LIFETIME_FUNC, this);
         }
     }
     Lifetime& operator=(Lifetime const& rhs) noexcept // NOLINT (don't care
@@ -194,7 +221,7 @@ public:
         value_ = rhs.value_;
         Base::increment_stat(CopyAssignment);
         if constexpr (Print) {
-            print(std::source_location::current(), this, &rhs);
+            print(UTILS_LIFETIME_FUNC, this, &rhs);
         }
         return *this;
     }
@@ -204,7 +231,7 @@ public:
         value_ = std::move(rhs.value_);
         Base::increment_stat(MoveAssignment);
         if constexpr (Print) {
-            print(std::source_location::current(), this, &rhs);
+            print(UTILS_LIFETIME_FUNC, this, &rhs);
         }
         return *this;
     }
@@ -238,10 +265,10 @@ public:
 private:
     T value_;
 
-    void print(std::source_location const& loc, Lifetime const* self = nullptr,
+    void print(char const* function_name, Lifetime const* self = nullptr,
                Lifetime const* other = nullptr) const
     {
-        std::cout << loc.function_name();
+        std::cout << function_name;
         if (self != nullptr) {
             std::cout << "\n\t self=" << self->value_ << " @ " << self;
         }
@@ -252,3 +279,5 @@ private:
     }
 };
 } // namespace utils::testing
+
+#undef UTILS_LIFETIME_FUNC

@@ -45,7 +45,14 @@ template <typename T>
 
     auto thread_local static engine =
         std::default_random_engine{std::random_device{}()};
-    return std::uniform_int_distribution<T>{min, max}(engine);
+
+    // std::uniform_int_distribution is only defined for short/int/long/long long
+    // and their unsigned counterparts. char-sized types and bool are undefined
+    // behavior, so widen to a supported type and narrow the result back.
+    using dist_type =
+        std::conditional_t<std::is_signed_v<T>, long long, unsigned long long>;
+    return static_cast<T>(std::uniform_int_distribution<dist_type>{
+        static_cast<dist_type>(min), static_cast<dist_type>(max)}(engine));
 }
 
 template <std::size_t N, typename input_t = std::uint32_t,

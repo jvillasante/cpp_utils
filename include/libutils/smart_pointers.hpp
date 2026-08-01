@@ -15,9 +15,9 @@ template <typename Derived, typename Base, typename Deleter>
 [[nodiscard]] std::unique_ptr<Derived, Deleter>
 static_ptr_cast(std::unique_ptr<Base, Deleter> base)
 {
-    auto deleter = base.get_deleter();
     auto derived_ptr = static_cast<Derived*>(base.release());
-    return std::unique_ptr<Derived, Deleter>(derived_ptr, std::move(deleter));
+    return std::unique_ptr<Derived, Deleter>(derived_ptr,
+                                             std::move(base.get_deleter()));
 }
 
 /**
@@ -54,9 +54,9 @@ dynamic_ptr_cast(std::unique_ptr<Base, Deleter>& base)
 {
     if (auto* derived = dynamic_cast<Derived*>(base.get());
         derived != nullptr) {
-        auto deleter = base.get_deleter();
         base.release();
-        return std::unique_ptr<Derived, Deleter>(derived, std::move(deleter));
+        return std::unique_ptr<Derived, Deleter>(derived,
+                                                 std::move(base.get_deleter()));
     }
 
     return nullptr;

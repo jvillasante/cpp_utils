@@ -9,7 +9,9 @@
  * hash_combine taken from boost. Example implementation for a Point type:
  *     struct Point { int x, y; };
  *
- *     bool operator==(Point const& lhs, Point const& rhs) { return lhs.x == rhs.x && lhs.y == rhs.y; }
+ *     bool operator==(Point const& lhs, Point const& rhs) {
+ *         return lhs.x == rhs.x && lhs.y == rhs.y;
+ *     }
  *
  *     namespace std {
  *     template <>

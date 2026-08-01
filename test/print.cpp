@@ -2,7 +2,6 @@
 
 #include <catch2/catch_test_macros.hpp>
 #include <sstream>
-#include <string>
 #include <utility>
 #include <vector>
 
@@ -21,7 +20,8 @@ TEST_CASE("Print - line with header shorter than width")
     REQUIRE(oss.str() == "===hi=====\n");
 }
 
-TEST_CASE("Print - line with header longer than width falls back to header only")
+TEST_CASE(
+    "Print - line with header longer than width falls back to header only")
 {
     std::ostringstream oss;
     utils::print::line("toolongheader", '=', 5, oss);
@@ -32,7 +32,8 @@ TEST_CASE("Print - line header at underflow boundary falls back to header only")
 {
     // header.size() = s - 1 would underflow s - size - 3 as size_t: must fall back
     std::ostringstream oss;
-    utils::print::line("123456789", '=', 10, oss); // size=9, s=10: 10-9-3 underflows
+    utils::print::line("123456789", '=', 10,
+                       oss); // size=9, s=10: 10-9-3 underflows
     REQUIRE(oss.str() == "123456789\n");
 }
 
@@ -40,7 +41,8 @@ TEST_CASE("Print - line header at exact fill boundary produces prefix only")
 {
     // header.size() + 3 == s: no fill chars, still falls back (header only)
     std::ostringstream oss;
-    utils::print::line("1234567", '=', 10, oss); // size=7, s=10: 7+3==10, not < 10
+    utils::print::line("1234567", '=', 10,
+                       oss); // size=7, s=10: 7+3==10, not < 10
     REQUIRE(oss.str() == "1234567\n");
 }
 
@@ -69,6 +71,7 @@ TEST_CASE("Print - collection from iterators")
 
 TEST_CASE("Print - pair operator<<")
 {
+    using utils::operator<<; // operator lives in namespace utils, not global
     std::ostringstream oss;
     oss << std::make_pair(1, 2);
     REQUIRE(oss.str() == "(1:2)");

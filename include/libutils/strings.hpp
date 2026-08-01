@@ -25,6 +25,18 @@ constexpr bool is_whitespace(CharT ch) noexcept
     return ch == CharT{' '} || ch == CharT{'\t'} || ch == CharT{'\n'} ||
            ch == CharT{'\r'} || ch == CharT{'\v'} || ch == CharT{'\f'};
 }
+
+// Widen a single element to its unsigned byte value without sign-extension.
+// Works for integral element types as well as std::byte.
+template <typename T>
+[[nodiscard]] constexpr unsigned to_byte_value(T const v) noexcept
+{
+    if constexpr (std::is_same_v<T, std::byte>) {
+        return std::to_integer<unsigned>(v);
+    } else {
+        return static_cast<unsigned>(static_cast<std::make_unsigned_t<T>>(v));
+    }
+}
 } // namespace detail
 
 template <typename CharT>
@@ -51,20 +63,21 @@ template <typename Val>
 [[nodiscard]] inline std::enable_if_t<!std::is_arithmetic_v<Val>, std::string>
 to_string(Val const& val)
 {
-    return static_cast<std::ostringstream const&>(std::ostringstream() << val)
-        .str();
+    std::ostringstream oss;
+    oss << val;
+    return oss.str();
 }
 
 // ----------
 
 template <typename CharT>
-inline char my_tolower(CharT const ch, std::locale const& loc = std::locale())
+inline CharT my_tolower(CharT const ch, std::locale const& loc = std::locale())
 {
     return std::tolower(ch, loc);
 }
 
 template <typename CharT>
-inline char my_toupper(CharT const ch, std::locale const& loc = std::locale())
+inline CharT my_toupper(CharT const ch, std::locale const& loc = std::locale())
 {
     return std::toupper(ch, loc);
 }
@@ -126,7 +139,7 @@ inline void trimright(tstring<CharT>& text)
 } // namespace mutable_version
 
 template <typename CharT>
-[[nodiscard, deprecated("Use std::basic_string_view::starts_with() (C++20)")]]
+[[nodiscard]]
 inline bool starts_with(tstringview<CharT> const str,
                         tstringview<CharT> const prefix)
 {
@@ -134,7 +147,7 @@ inline bool starts_with(tstringview<CharT> const str,
 }
 
 template <typename CharT>
-[[nodiscard, deprecated("Use std::basic_string_view::ends_with() (C++20)")]]
+[[nodiscard]]
 inline bool ends_with(tstringview<CharT> const input,
                       tstringview<CharT> const suffix)
 {
@@ -144,7 +157,7 @@ inline bool ends_with(tstringview<CharT> const input,
 }
 
 template <typename CharT>
-[[nodiscard, deprecated("Use std::basic_string_view::contains() (C++23)")]]
+[[nodiscard]]
 bool contains(tstringview<CharT> const input, tstringview<CharT> const needle,
               bool const ignore_case = false)
 {
@@ -329,6 +342,40 @@ split(tstring<CharT> const& text, tstring<CharT> const& delimiters)
     return tokens;
 }
 
+// Non-owning split: returns views into `text`, which must outlive the result.
+// Allocates only the token vector, not the tokens themselves. Empty tokens are
+// skipped, matching split().
+template <typename CharT>
+[[nodiscard]] inline std::vector<tstringview<CharT>>
+split_view(tstringview<CharT> const text, tstringview<CharT> const delimiters)
+{
+    std::vector<tstringview<CharT>> tokens;
+    std::size_t pos = 0;
+    std::size_t prev_pos = 0;
+    while ((pos = text.find_first_of(delimiters, prev_pos)) !=
+           tstringview<CharT>::npos) {
+        if (pos > prev_pos) {
+            tokens.push_back(text.substr(prev_pos, pos - prev_pos));
+        }
+
+        prev_pos = pos + 1;
+    }
+
+    if (prev_pos < text.size()) {
+        tokens.push_back(text.substr(prev_pos));
+    }
+
+    return tokens;
+}
+
+// Single-character delimiter convenience overload.
+template <typename CharT>
+[[nodiscard]] inline std::vector<tstringview<CharT>>
+split_view(tstringview<CharT> const text, CharT const delimiter)
+{
+    return split_view<CharT>(text, tstringview<CharT>(&delimiter, 1));
+}
+
 template <typename CharT, typename Iter>
 [[nodiscard]] inline tstring<CharT> to_hex(Iter begin, Iter end,
                                            bool use_uppercase = true,
@@ -341,7 +388,7 @@ template <typename CharT, typename Iter>
 
     for (auto current = begin; current != end; ++current) {
         oss << std::hex << std::setw(2) << std::setfill('0')
-            << static_cast<int>(*current);
+            << detail::to_byte_value(*current);
         if (insert_spaces && std::next(current) != end) {
             oss << ' ';
         }
@@ -396,7 +443,7 @@ template <typename CharT>
 
 // Kept for backwards compatibility.
 template <typename CharT>
-[[nodiscard, deprecated("Use hex_to_bytes()")]]
+[[nodiscard]]
 std::vector<std::byte> to_bytes(tstringview<CharT> const str)
 {
     return hex_to_bytes(str);
@@ -412,7 +459,9 @@ template <typename T, typename StringLike>
     auto const sv = std::string_view(str);
     auto const [ptr, ec] =
         std::from_chars(sv.data(), sv.data() + sv.size(), value);
-    if (ec != std::errc{}) {
+    // Reject both parse errors and trailing garbage ("123abc" must not yield
+    // 123): require that the whole input was consumed.
+    if (ec != std::errc{} || ptr != sv.data() + sv.size()) {
         throw std::invalid_argument("to_integral: conversion failed");
     }
     return value;

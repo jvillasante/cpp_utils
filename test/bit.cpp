@@ -23,7 +23,7 @@ TEST_CASE("Bit - set_bit")
 
     // 64-bit: set bit beyond 32
     std::uint64_t const val = utils::bit::set_bit(std::uint64_t{0}, 33, true);
-    REQUIRE(val == (std::uint64_t{1} << 33));
+    REQUIRE(val == (std::uint64_t{1} << 33u));
 }
 
 TEST_CASE("Bit - invert_bit")
@@ -32,7 +32,7 @@ TEST_CASE("Bit - invert_bit")
     REQUIRE(utils::bit::invert_bit(0b1010u, 1) == 0b1000u);
 
     std::uint64_t const val = utils::bit::invert_bit(std::uint64_t{0}, 40);
-    REQUIRE(val == (std::uint64_t{1} << 40));
+    REQUIRE(val == (std::uint64_t{1} << 40u));
 }
 
 TEST_CASE("Bit - get_bit_range")
@@ -48,6 +48,32 @@ TEST_CASE("Bit - set_bit_range")
     REQUIRE(utils::bit::set_bit_range(0u, 1u, 3u, 0b101u) == 0b01010u);
 }
 
+TEST_CASE("Bit - single-bit range (start == end)")
+{
+    // A one-bit range is now valid and behaves like get_bit.
+    REQUIRE(utils::bit::get_bit_range(0b100u, 2u, 2u) == 1u);
+    REQUIRE(utils::bit::get_bit_range(0b100u, 0u, 0u) == 0u);
+    REQUIRE(utils::bit::set_bit_range(0u, 3u, 3u, 1u) == 0b1000u);
+    REQUIRE(utils::bit::invert_bit_range(0b0000u, 2u, 2u) == 0b0100u);
+}
+
+TEST_CASE("Bit - full-width range does not overflow the shift")
+{
+    // start == 0, end == digits-1 previously shifted by the full width (UB).
+    std::uint32_t const all32 = 0xFFFFFFFFu;
+    REQUIRE(utils::bit::get_bit_range(all32, 0u, 31u) == all32);
+    REQUIRE(utils::bit::set_bit_range(std::uint32_t{0}, 0u, 31u,
+                                      std::size_t{0xFFFFFFFFu}) == all32);
+    REQUIRE(utils::bit::invert_bit_range(std::uint32_t{0}, 0u, 31u) == all32);
+
+    std::uint64_t const all64 = 0xFFFFFFFFFFFFFFFFull;
+    REQUIRE(utils::bit::get_bit_range(all64, 0u, 63u) == all64);
+    REQUIRE(utils::bit::invert_bit_range(std::uint64_t{0}, 0u, 63u) == all64);
+
+    // A high-end sub-range that reaches the top bit.
+    REQUIRE(utils::bit::get_bit_range(all32, 16u, 31u) == 0xFFFFu);
+}
+
 TEST_CASE("Bit - invert_bit_range")
 {
     REQUIRE(utils::bit::invert_bit_range(0b00000u, 1u, 3u) == 0b01110u);
@@ -58,7 +84,7 @@ TEST_CASE("Bit - from_bytes / as_bytes roundtrip")
 {
     std::uint32_t const original = 0xDEADBEEFu;
     std::byte const* bytes = utils::bit::as_bytes(original);
-    std::uint32_t const restored = utils::bit::from_bytes<std::uint32_t>(bytes);
+    auto const restored = utils::bit::from_bytes<std::uint32_t>(bytes);
     REQUIRE(original == restored);
 }
 

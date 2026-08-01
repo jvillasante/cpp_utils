@@ -17,8 +17,7 @@ struct CFileHandleTraits
     static handle invalid() noexcept { return nullptr; }
     static void destroy(handle value) noexcept
     {
-        if (value != CFileHandleTraits::invalid())
-        {
+        if (value != CFileHandleTraits::invalid()) {
             utils::unused(std::fclose(value));
         }
     }
@@ -28,8 +27,7 @@ std::string read(FILE* f)
 {
     utils::unused(::fseek(f, 0, SEEK_END));
     auto position = ::ftell(f);
-    if (position < 0)
-    {
+    if (position < 0) {
         std::cerr << "ftell failed" << '\n';
         return {};
     }
@@ -61,8 +59,7 @@ public:
     UniqueHandleFixture()
     {
         std::ofstream fs(file);
-        if (!fs)
-        {
+        if (!fs) {
             std::cerr << "Cannot open the output file " << file << '\n';
             FAIL("Cannot open the output file");
         }
@@ -128,8 +125,7 @@ struct IntHandleTraits
     static handle invalid() noexcept { return -1; }
     static void destroy(handle value) noexcept
     {
-        if (value != IntHandleTraits::invalid())
-        {
+        if (value != IntHandleTraits::invalid()) {
             value = IntHandleTraits::invalid();
         }
     }

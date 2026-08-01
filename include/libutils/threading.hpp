@@ -6,9 +6,24 @@
 #include <mutex>
 #include <sstream>
 #include <thread>
+#include <type_traits>
+#include <utility>
 
 namespace utils::threading
 {
+namespace detail
+{
+// Detects whether a type exposes a `mutex()` member. A C++17-compatible
+// stand-in for the C++20 `requires(Guard& g) { g.mutex(); }` expression.
+template <typename G, typename = void>
+struct has_mutex_method : std::false_type
+{};
+template <typename G>
+struct has_mutex_method<G, std::void_t<decltype(std::declval<G&>().mutex())>>
+    : std::true_type
+{};
+} // namespace detail
+
 struct pcout : public std::stringstream
 {
     static inline std::mutex mtx_;
@@ -45,17 +60,22 @@ void join_all(Collection& collection)
 /**
  * The anti-lock unlocks a `mutex` at construction and locks it at destruction.
  * Requires a Guard type that exposes a mutex() method (e.g. std::unique_lock).
- * std::lock_guard does not qualify — use std::unique_lock instead.
+ * std::lock_guard does not qualify: use std::unique_lock instead.
+ *
+ * IMPORTANT: the anti_lock unlocks the mutex behind the guard's back, so the
+ * guard still reports owns_lock() == true. An anti_lock must therefore be
+ * strictly nested inside the guard's lifetime. Do not unlock, relock, or
+ * destroy the owning guard while an anti_lock derived from it is alive, or the
+ * mutex will be unlocked or locked twice (undefined behavior).
  */
 template <typename Guard>
 struct anti_lock
 {
     using mutex_type = typename Guard::mutex_type;
 
-    static_assert(
-        requires(Guard& g) { g.mutex(); },
-        "anti_lock requires a guard with a mutex() method; "
-        "use std::unique_lock, not std::lock_guard");
+    static_assert(detail::has_mutex_method<Guard>::value,
+                  "anti_lock requires a guard with a mutex() method; "
+                  "use std::unique_lock, not std::lock_guard");
 
     explicit anti_lock(Guard& guard) : mutex_(guard.mutex())
     {

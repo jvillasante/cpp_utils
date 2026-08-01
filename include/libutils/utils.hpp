@@ -8,6 +8,7 @@
 #include <libutils/hash.hpp>
 #include <libutils/iterators.hpp>
 #include <libutils/math.hpp>
+#include <libutils/overloaded.hpp>
 #include <libutils/print.hpp>
 #include <libutils/scope_guard.hpp>
 #include <libutils/smart_pointers.hpp>

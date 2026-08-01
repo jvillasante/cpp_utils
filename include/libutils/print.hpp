@@ -6,19 +6,39 @@
 #include <iostream>
 #include <string>
 #include <string_view>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
-// operator<< for std::pair — placed in the global namespace so it is reachable
-// via unqualified lookup. Defined here rather than in namespace std (which
-// would be formally ill-formed per [namespace.std]).
-template <typename First, typename Second>
-std::ostream& operator<<(std::ostream& os,
-                         std::pair<First, Second> const& p) // NOLINT
+namespace utils
+{
+namespace detail
+{
+template <typename T, typename = void>
+struct is_ostreamable : std::false_type
+{};
+template <typename T>
+struct is_ostreamable<T, std::void_t<decltype(std::declval<std::ostream&>()
+                                              << std::declval<T const&>())>>
+    : std::true_type
+{};
+} // namespace detail
+
+// operator<< for std::pair, scoped to namespace utils rather than the global
+// namespace so it cannot clash with a consumer's own global pair printer (which
+// would be an ODR / ambiguity hazard). It is found by unqualified lookup inside
+// namespace utils; to stream a pair from elsewhere, bring it in with
+// `using utils::operator<<;`. Constrained so it only applies when both elements
+// are themselves streamable.
+template <typename First, typename Second,
+          typename = std::enable_if_t<detail::is_ostreamable<First>::value &&
+                                      detail::is_ostreamable<Second>::value>>
+std::ostream& operator<<(std::ostream& os, std::pair<First, Second> const& p)
 {
     os << "(" << p.first << ':' << p.second << ")";
     return os;
 }
+} // namespace utils
 
 namespace utils::print
 {

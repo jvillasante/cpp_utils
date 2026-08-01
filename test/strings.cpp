@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <vector>
 
 TEST_CASE("Strings - to_string")
@@ -16,6 +17,31 @@ TEST_CASE("Strings - to_upper / to_lower")
 {
     REQUIRE(utils::strings::to_upper<char>("hello") == "HELLO");
     REQUIRE(utils::strings::to_lower<char>("WORLD") == "world");
+}
+
+TEST_CASE("Strings - wide-char case folding is not truncated")
+{
+    // ASCII folding through the wide-char path.
+    REQUIRE(utils::strings::to_upper<wchar_t>(std::wstring{L"hello"}) ==
+            L"HELLO");
+    REQUIRE(utils::strings::to_lower<wchar_t>(std::wstring{L"WORLD"}) ==
+            L"world");
+
+    // A code point above 0xFF that the C locale leaves unchanged. With the old
+    // `char` return type it was truncated to a low byte; it must round-trip now.
+    wchar_t const wc = L'中'; // CJK '中', not cased in the C locale
+    REQUIRE(utils::strings::my_toupper(wc) == wc);
+    REQUIRE(utils::strings::my_tolower(wc) == wc);
+}
+
+TEST_CASE("Strings - to_hex does not sign-extend high bytes")
+{
+    // Signed char values >= 0x80 previously printed as "ffffff80" via
+    // sign-extension; they must render as a single byte.
+    std::vector<signed char> data{static_cast<signed char>(0x80),
+                                  static_cast<signed char>(0xFF),
+                                  static_cast<signed char>(0x7F)};
+    REQUIRE(utils::strings::to_hex<char>(data, true, false) == "80FF7F");
 }
 
 TEST_CASE("Strings - reverse")
@@ -57,8 +83,7 @@ TEST_CASE("Strings - join")
 
 TEST_CASE("Strings - split by char")
 {
-    auto tokens =
-        utils::strings::split<char>(std::string{"a,b,c"}, ',');
+    auto tokens = utils::strings::split<char>(std::string{"a,b,c"}, ',');
     REQUIRE(tokens.size() == 3);
     REQUIRE(tokens[0] == "a");
     REQUIRE(tokens[2] == "c");
@@ -66,8 +91,8 @@ TEST_CASE("Strings - split by char")
 
 TEST_CASE("Strings - split by delimiters")
 {
-    auto tokens = utils::strings::split<char>(std::string{"a,b;c"},
-                                              std::string{",;"});
+    auto tokens =
+        utils::strings::split<char>(std::string{"a,b;c"}, std::string{",;"});
     REQUIRE(tokens.size() == 3);
     REQUIRE(tokens[1] == "b");
 }
@@ -107,10 +132,40 @@ TEST_CASE("Strings - to_integral")
 {
     REQUIRE(utils::strings::to_integral<int>("42") == 42);
     REQUIRE(utils::strings::to_integral<int>("-7") == -7);
-    REQUIRE(utils::strings::to_integral<std::uint64_t>("18446744073709551615") ==
-            18446744073709551615ULL);
+    REQUIRE(utils::strings::to_integral<std::uint64_t>(
+                "18446744073709551615") == 18446744073709551615ULL);
     REQUIRE_THROWS_AS(utils::strings::to_integral<int>("abc"),
                       std::invalid_argument);
+    // Trailing garbage must be rejected, not silently truncated to 123.
+    REQUIRE_THROWS_AS(utils::strings::to_integral<int>("123abc"),
+                      std::invalid_argument);
+    REQUIRE_THROWS_AS(utils::strings::to_integral<int>("12 34"),
+                      std::invalid_argument);
+}
+
+TEST_CASE("Strings - split_view (non-owning)")
+{
+    std::string const text = "a,b;c";
+    auto tokens =
+        utils::strings::split_view<char>(text, std::string_view{",;"});
+    REQUIRE(tokens.size() == 3);
+    REQUIRE(tokens[0] == "a");
+    REQUIRE(tokens[1] == "b");
+    REQUIRE(tokens[2] == "c");
+    // Views point back into the original buffer (no copies).
+    REQUIRE(tokens[0].data() == text.data());
+
+    auto by_char = utils::strings::split_view<char>(text, ',');
+    REQUIRE(by_char.size() == 2);
+    REQUIRE(by_char[0] == "a");
+    REQUIRE(by_char[1] == "b;c");
+
+    // Empty tokens are skipped, matching split().
+    auto skipped =
+        utils::strings::split_view<char>(std::string_view{",,a,,b,,"}, ',');
+    REQUIRE(skipped.size() == 2);
+    REQUIRE(skipped[0] == "a");
+    REQUIRE(skipped[1] == "b");
 }
 
 TEST_CASE("Strings - join with iterator range")

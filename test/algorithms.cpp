@@ -7,7 +7,9 @@
 TEST_CASE("Algorithms - Split")
 {
     std::string const s{"a-b-c-d-e-f-g"};
-    auto binfunc([](auto it_a, auto it_b) { return std::string(it_a, it_b); });
+    auto binfunc([](auto it_a, auto it_b) {
+        return std::string(it_a, it_b);
+    });
 
     std::list<std::string> l;
     utils::algorithms::split(std::begin(s), std::end(s), std::back_inserter(l),
@@ -18,7 +20,9 @@ TEST_CASE("Algorithms - Split")
 
 TEST_CASE("Algorithms - Gather")
 {
-    auto is_a([](char c) { return c == 'a'; });
+    auto is_a([](char c) {
+        return c == 'a';
+    });
     std::string a{"a_a_a_a_a_a_a_a_a_a_a"};
 
     auto middle(std::begin(a) +
@@ -28,13 +32,13 @@ TEST_CASE("Algorithms - Gather")
     REQUIRE(a == "_____aaaaaaaaaaa_____");
     REQUIRE(std::distance(first1, last1) == 11);
 
-    auto [first2, last2] = utils::algorithms::gather(
-        std::begin(a), std::end(a), std::begin(a), is_a);
+    auto [first2, last2] = utils::algorithms::gather(std::begin(a), std::end(a),
+                                                     std::begin(a), is_a);
     REQUIRE(a == "aaaaaaaaaaa__________");
     REQUIRE(first2 == std::begin(a));
 
-    auto [first3, last3] = utils::algorithms::gather(
-        std::begin(a), std::end(a), std::end(a), is_a);
+    auto [first3, last3] = utils::algorithms::gather(std::begin(a), std::end(a),
+                                                     std::end(a), is_a);
     REQUIRE(a == "__________aaaaaaaaaaa");
     REQUIRE(last3 == std::end(a));
 

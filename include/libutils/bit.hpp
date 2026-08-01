@@ -11,6 +11,20 @@
 
 namespace utils::bit
 {
+namespace detail
+{
+// Mask with the low `width` bits set. Handles width == digits without the
+// undefined behavior of shifting by the full bit width of T.
+template <typename T>
+[[nodiscard]] constexpr T low_bits_mask(std::size_t width)
+{
+    static_assert(std::is_unsigned_v<T>);
+    return (width >= static_cast<std::size_t>(std::numeric_limits<T>::digits))
+               ? static_cast<T>(~T{0})
+               : static_cast<T>((T{1} << width) - T{1});
+}
+} // namespace detail
+
 template <typename To>
 [[nodiscard]] To from_bytes(std::byte const* bytes)
 {
@@ -87,9 +101,9 @@ template <typename T>
 
     assert(start < std::numeric_limits<T>::digits);
     assert(end < std::numeric_limits<T>::digits);
-    assert(start != end);
-    T mask = ((T{1} << (end - start + 1)) - 1) << start;
-    return (num & mask) >> start;
+    assert(start <= end);
+    T const low = detail::low_bits_mask<T>(end - start + 1);
+    return (num >> start) & low;
 }
 
 template <typename T>
@@ -100,11 +114,11 @@ template <typename T>
 
     assert(start < std::numeric_limits<T>::digits);
     assert(end < std::numeric_limits<T>::digits);
-    assert(start != end);
-    std::size_t range_size = end - start + 1;
-    T mask = ((T{1} << range_size) - 1) << start;
-    num &= ~mask;
-    num |= (value & ((T{1} << range_size) - 1)) << start;
+    assert(start <= end);
+    T const low = detail::low_bits_mask<T>(end - start + 1);
+    T const mask = static_cast<T>(low << start);
+    num &= static_cast<T>(~mask);
+    num |= static_cast<T>((static_cast<T>(value) & low) << start);
     return num;
 }
 
@@ -115,8 +129,8 @@ template <typename T>
 
     assert(start < std::numeric_limits<T>::digits);
     assert(end < std::numeric_limits<T>::digits);
-    assert(start != end);
-    T mask = ((T{1} << (end - start + 1)) - 1) << start;
-    return num ^ mask;
+    assert(start <= end);
+    T const low = detail::low_bits_mask<T>(end - start + 1);
+    return num ^ static_cast<T>(low << start);
 }
 } // namespace utils::bit
