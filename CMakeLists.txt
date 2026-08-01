@@ -24,7 +24,8 @@ include(CTest)
 add_subdirectory("src")
 add_subdirectory("tools")
 
-# Conditionally include the test directory
-if(BUILD_TESTING)
+# Only build tests if cpp_utils is the main project being built, NOT if it's
+# being fetched as a dependency.
+if(PROJECT_IS_TOP_LEVEL AND BUILD_TESTING)
     add_subdirectory("test")
 endif()
